@@ -1,0 +1,88 @@
+syntax = "proto2";
+
+message AROS_Command {
+  required COMMAND command = 1;
+  optional bytes byte_string = 2;
+}
+
+message Simulator_Response {
+  required RESPONSE response = 1;
+  optional float single = 2;
+  optional VECTOR vector = 3;
+  optional bytes byte_string = 4;
+
+}
+
+message VECTOR {
+  required float x = 1;
+  required float y = 2;
+  required float z = 3;
+}
+
+enum COMMAND {
+  GEN_PING = 1;
+  GEN_GET_VOLTAGE = 3;
+  GEN_GET_TEMP = 4;
+
+  EPS_GET_CHARGE = 5;
+
+  ESP_GET_FUEL = 6;
+  ESP_GET_MODE = 7;
+  ESP_SET_WARMUP = 8;
+  ESP_SET_BURNING = 9;
+  ESP_SET_OFF = 10;
+
+  DRAG_GET_MODE = 11;
+  DRAG_SET_DEPLOY = 12;
+
+  ADCS_GET_PRY = 13; // Pitch Roll Yaw
+  ADCS_GET_MODE = 14;
+  ADCS_SET_OFF = 15;
+  ADCS_SET_DE_TUMBLE = 16;
+  ADCS_SET_SUN_POINT = 17;
+
+  GNSS_GET_POSI = 18;
+
+  PI_GET_MODE = 19;
+  PI_GET_AUDIO = 20;
+  PI_SET_ON = 21;
+  PI_SET_OFF = 22;
+
+  TTC_GET_MODE = 23;
+  TTC_GET_BYTE_STRING = 24;
+  TTC_SET_OFF = 25;
+  TTC_SET_BEACONING = 26;
+  TTC_SET_CONNECTING = 27;
+  TTC_SEND_BYTE_STRING = 28;
+}
+
+enum RESPONSE {
+  GEN_PONG = 1;
+  GEN_ERROR = 2;
+  GEN_SUCCESS = 23;
+
+  GEN_RETURN_SINGLE = 3;
+  GEM_RETURN_VECTOR = 4;
+  GEN_RETURN_BYTE_STRING = 16;
+
+  ESP_OFF = 5;
+  ESP_WARMING = 6;
+  ESP_READY = 7;
+  ESP_BURNING = 9;
+  ESP_COOL_DOWN = 10;
+
+  DRAG_RETRACTED = 11;
+  DRAG_DEPLOYED = 12;
+
+  ADCS_OFF = 13;
+  ADCS_DE_TUMBLE = 14;
+  ADCS_SUN_POINT = 15;
+
+  PI_ON = 17;
+  PI_OFF = 18;
+
+  TTC_OFF = 19;
+  TTC_BEACONING = 20;
+  TTC_CONNECTING = 21;
+  TTC_ESTABLISHED = 22;
+}
