@@ -116,7 +116,7 @@ class interfaceLAN(interface, ABC):
                 # If timeout then check controller.close status
                 if self.controller.close:
                     # If true return so thread can close
-                    print(f"Thread {self.system.name} closing")
+                    print(f"Thread {self.system.name} closing before connection")
                     return
                 else:
                     # Else do nothing and listen again
@@ -140,15 +140,39 @@ class interfaceLAN(interface, ABC):
         """
         Receives packet from AR-OS and returns the message to the simulator from desired interface (LAN)
         """
+        # sets timeout to check if simulation still running
+        self.conn.settimeout(1)
+
         # Recevives first 4 bytes of message, which is the length of the message to come
         lengthBytes = b''
         while len(lengthBytes) < 4:
-            lengthBytes += self.conn.recv(4-len(lengthBytes))
+            try:
+                lengthBytes += self.conn.recv(4-len(lengthBytes))
+            except TimeoutError:
+                #print("TIMEOUT")
+                # If timeout then check controller.close status
+                if self.controller.close:
+                    # If true exit thread
+                    print(f"Thread {self.system.name} closing after connection")
+                    exit()
+                else:
+                    # Else do nothing and listen again
+                    pass
         length = int.from_bytes(lengthBytes, 'little')
 
         msg = b''
         while len(msg) < length:
-            msg += self.conn.recv(length-len(msg))
+            try:
+                msg += self.conn.recv(length-len(msg))
+            except TimeoutError:
+                # If timeout then check controller.close status
+                if self.controller.close:
+                    # If true exit thread
+                    print(f"Thread {self.system.name} closing after connection")
+                    exit()
+                else:
+                    # Else do nothing and listen again
+                    pass
         return msg
 
     @abstractmethod
