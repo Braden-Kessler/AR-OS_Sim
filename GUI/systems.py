@@ -4,7 +4,7 @@ from enum import Enum
 import socket
 from queue import Queue
 from threading import Lock
-from interfaces import interface
+
 
 DEFAULT_VOLTAGE = 12.0
 DEFAULT_TEMP = 30.0

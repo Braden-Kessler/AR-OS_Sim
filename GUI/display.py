@@ -21,7 +21,7 @@ class displayController:
 
         self.systemDisplays = []
         self.layoutControl = [[sg.Text('Systems')],
-                              [sg.Button('Close', key='-CLOSE-', size=(10, 1)), sg.Button('Simulator', key='-SIM-', size=(10, 1))],
+                              [sg.Button('Exit', key='-CLOSE-', size=(10, 1)), sg.Button('Simulator', key='-SIM-', size=(10, 1))],
                               [sg.Radio('Static Refresh', group_id=1, default=True, enable_events=True, key='-STATIC-'), sg.Radio('Auto Refresh', group_id=1, enable_events=True, key='-AUTO-')],
                               [sg.HorizontalSeparator()]
                               ]
@@ -138,7 +138,7 @@ class simulatorDisplay:
                        [sg.Button('Run for', key='-FOR-', size=(16, 1)),
                         sg.Input(size=(16, 1), key='-INPUT_FOR-')],
                        [sg.Radio('Enable Real Time', group_id=1, enable_events=True, key='-RT_ON-'),
-                        sg.Radio('Disable Time', group_id=1, default=True, enable_events=True, key='-RT_OFF-')],
+                        sg.Radio('Disable Real Time', group_id=1, default=True, enable_events=True, key='-RT_OFF-')],
                        [sg.HorizontalSeparator()],
                        [sg.Text('Simulation Debugger:\t'), sg.Button('Show Debug', key='-DEBUG-', size=(16, 1))],
                        [sg.Text('Position:', key='-P-', visible=False),
