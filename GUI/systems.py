@@ -111,7 +111,10 @@ class dragSail(system):
         self.deployed = False
 
     def deploy_drag(self):
-        return True
+        if not self.deployed:
+            self.deployed = True
+            return True
+        return False
 
 
 # Attitude Direction Control System
@@ -251,10 +254,25 @@ class Pi_VHF(system):
     """
     def __init__(self, name, controller, port=0):
         system.__init__(self, name, controller, port)
+        # Pi status
         self.enabled = False
+        # Audio Status
         self.audio_filepath = ""
-        self.audio_status = audioState.UNSENT
-        self.listening = False
+        self.audio_status = audioState.NO_DATA
+        self.byte_to_send = b''
+        # Sonar Bouy
+        self.connection_radius = 500.0
+        self.latitude = 73.0
+        self.longitude = -96.0
+
+    def load_file(self):
+        try:
+            f = open(self.audio_filepath, 'rb')
+            self.byte_to_send = f.read()
+            f.close()
+            self.audio_status = audioState.UNSENT
+        except:
+            self.audio_status = audioState.ERROR_LOADING
 
     def get_audio(self):
         return b'TEST'
@@ -267,9 +285,11 @@ class Pi_VHF(system):
 
 
 class audioState(Enum):
-    UNSENT = 0
-    SENDING = 1
-    SENT = 2
+    NO_DATA = 0
+    UNSENT = 1
+    SENDING = 2
+    SENT = 3
+    ERROR_LOADING = 4
 
 
 

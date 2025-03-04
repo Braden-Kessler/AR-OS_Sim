@@ -46,6 +46,8 @@ class controller:
         self.Pi_VHF.add_interface(interfaceLAN_Pi_VHF)
         self.displayController.addSystem(self.Pi_VHF, pi_vhfDisplay)
         self.systems.append(self.Pi_VHF)
+        # Adds reference of Pi VHF to GNSS sub display for map drawing purposes
+        self.displayController.systemDisplays[0].add_Pi_VHF_ref(self.Pi_VHF)
 
         # Electro-Spray Propulsion
         self.ESP = ESP("ESP", self, 8002)

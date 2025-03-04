@@ -5,6 +5,7 @@ import time
 from systems import EPSState, ESPState, GNSS_ADCSState, audioState, GNSS_TRAIL_SIZE, ADCS_mode, TTC_mode, TTC_GS_status
 from globe import GLOBE
 
+KINGSTON = (-76.4930, 44.2334)
 
 class displayController:
     """
@@ -523,6 +524,13 @@ class adcsDisplay(subDisplay):
 
 class gnssDisplay(subDisplay):
 
+    def __init__(self, system):
+        super().__init__(system)
+        self.Pi_VHF = None
+
+    def add_Pi_VHF_ref(self, Pi_VHF):
+        self.Pi_VHF = Pi_VHF
+
     def generateLayoutBody(self):
         options = ('Manual', 'Simulated')
 
@@ -560,7 +568,10 @@ class gnssDisplay(subDisplay):
         self.drawGlobe(draw)
 
         # Draw kingston at 44.2334 N and 76.4930 W
-        draw.DrawPoint((-76.4930, 44.2334), size=3, color='green')
+        draw.DrawPoint(KINGSTON, size=3, color='green')
+
+        # Draw sonarbouy at set coordinates
+        draw.DrawPoint((self.Pi_VHF.longitude, self.Pi_VHF.latitude), size=3, color='blue')
 
         # Draw Audimus trail
         if self.system.trailSize > 0:
@@ -646,10 +657,26 @@ class pi_vhfDisplay(subDisplay):
 
     def generateLayoutBody(self):
 
-        self.layout.append([[sg.Text('VHS Radio Status:\t'), sg.Text(f'{"LISTENING" if self.system.enabled else "OFF"}\t', key='-RADIO_STATUS-')],
+        self.layout.append([[sg.Text('Raspberry Pi:')],
+                            [sg.Text('VHS Radio Status:\t'), sg.Text(f'{"LISTENING" if self.system.enabled else "OFF"}\t', key='-RADIO_STATUS-')],
                             [sg.Button('Enable', key='-ENABLE-', size=(7, 1)), sg.Button('Disable', key='-DISABLE-', size=(7, 1))],
-                            [sg.HorizontalSeparator()], [sg.Text('Enter Audio File to Send:')],
-                            [sg.Text('File', size=(8, 1)), sg.Input(key='-AUDIO_FILEPATH-'), sg.FileBrowse(key='-BROWSE-', file_types=['typeName {wav}'], enable_events=True)],
+                            [sg.HorizontalSeparator()],
+                            [sg.Text('Sonarbuoy:')],
+                            [sg.Text('Connection Range\t'),
+                             sg.Text(f'{self.system.connection_radius} km\t', key='-RANGE-'),
+                             sg.Input(size=(10, 1), key='-INPUT_RANGE-'), sg.Button('Set Range', key='-SET_RANGE-')],
+                            [sg.Text('Latitude:\t\t'),
+                             sg.Text(f'{abs(self.system.latitude)} {"N" if self.system.latitude >= 0 else "S"}\t',
+                                     key='-LAT-'),
+                             sg.Input(size=(10, 1), key='-INPUT_LAT-'), sg.Button('Set Latitude', key='-SET_LAT-')],
+                            [sg.Text('Longitude:\t'),
+                             sg.Text(f'{abs(self.system.longitude)} {"E" if self.system.longitude >= 0 else "W"}\t',
+                                     key='-LONG-'),
+                             sg.Input(size=(10, 1), key='-INPUT_LONG-'), sg.Button('Set Latitude', key='-SET_LONG-')],
+                            [sg.HorizontalSeparator()],
+                            [sg.Text('Enter Audio File to Send:')],
+                            [sg.Text('File Path:\t'), sg.Text(f'{self.system.audio_filepath if self.system.audio_filepath != "" else "No File Selected"}', key='-AUDIO_FILEPATH_OUTPUT-')],
+                            [sg.Input(key='-AUDIO_FILEPATH-'), sg.FileBrowse(key='-BROWSE-', file_types=['typeName {wav}'], enable_events=True)],
                             [sg.Button('Set File', key='-SET_FILE-')],
                             [sg.Text('Audio Status:\t'), sg.Text(f'{self.system.audio_status.name}\t', key='-AUDIO_STATUS-')]
                             ]
@@ -661,6 +688,10 @@ class pi_vhfDisplay(subDisplay):
             self.window['-RADIO_STATUS-'].update(f'{"LISTENING" if self.system.enabled else "OFF"}\t')
             self.window['-AUDIO_STATUS-'].update(f'{self.system.audio_status.name}\t')
             self.window['-AUDIO_FILEPATH-'].update(f'{self.system.audio_filepath}')
+            self.window['-AUDIO_FILEPATH_OUTPUT-'].update(f'{self.system.audio_filepath if self.system.audio_filepath != "" else "No File Selected"}')
+            self.window['-RANGE-'].update(f'{self.system.connection_radius} km\t')
+            self.window['-LAT-'].update(f'{abs(self.system.latitude)} {"N" if self.system.latitude >= 0 else "S"}\t')
+            self.window['-LONG-'].update(f'{abs(self.system.longitude)} {"E" if self.system.longitude >= 0 else "W"}\t')
 
     def handleEvent(self, event, values):
         if event == sg.WIN_CLOSED or event == '-CLOSE-':
@@ -675,6 +706,35 @@ class pi_vhfDisplay(subDisplay):
         elif event == '-SET_FILE-' or event == '-BROWSE-':
             self.system.audio_filepath = values['-AUDIO_FILEPATH-']
             print(self.system.audio_filepath)
+            self.system.load_file()
+        elif event == '-SET_RANGE-':
+            try:
+                val = float(values['-INPUT_RANGE-'])
+                if val < 0:
+                    val = 0
+                self.system.connection_radius = val
+            except ValueError:
+                pass
+        elif event == '-SET_LAT-':
+            try:
+                val = float(values['-INPUT_LAT-'])
+                if val > 90.0:
+                    val = 90.0
+                elif val < -90.0:
+                    val = -90.0
+                self.system.latitude = val
+            except ValueError:
+                pass
+        elif event == '-SET_LONG-':
+            try:
+                val = float(values['-INPUT_LONG-'])
+                if val > 180.0:
+                    val = 180.0
+                elif val < -180.0:
+                    val = -180.0
+                self.system.longitude = val
+            except ValueError:
+                pass
         self.refresh()
 
 
