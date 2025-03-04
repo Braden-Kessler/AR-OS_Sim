@@ -1,8 +1,8 @@
 from threading import Thread
 from display import displayController
-from systems import EPS, ESP, dragSail, GNSS, Pi_VHF, OBC, ADCS
-from display import epsDisplay, espDisplay, dragSailDisplay, gnssDisplay, pi_vhfDisplay, obcDisplay, adcsDisplay
-from interfaces import interfaceLAN_EPS, interfaceLAN_ESP, interfaceLAN_dragSail, interfaceLAN_GNSS, interfaceLAN_Pi_VHF, interfaceLAN_OBC, interfaceLAN_ADCS
+from systems import EPS, ESP, dragSail, GNSS, Pi_VHF, OBC, ADCS, TTC
+from display import epsDisplay, espDisplay, dragSailDisplay, gnssDisplay, pi_vhfDisplay, obcDisplay, adcsDisplay, ttcDisplay
+from interfaces import interfaceLAN_EPS, interfaceLAN_ESP, interfaceLAN_dragSail, interfaceLAN_GNSS, interfaceLAN_Pi_VHF, interfaceLAN_OBC, interfaceLAN_ADCS, interfaceLAN_TTC
 from simulator import simulator
 
 import PySimpleGUI as sg
@@ -65,8 +65,14 @@ class controller:
         self.displayController.addSystem(self.OBC, obcDisplay)
         self.systems.append(self.OBC)
 
+        # Telemetry Tracking and Command
+        self.TTC = TTC("TTC/GS", self, 8008)
+        self.TTC.add_interface(interfaceLAN_TTC)
+        self.displayController.addSystem(self.TTC, ttcDisplay)
+        self.systems.append(self.TTC)
+
         # Simulator
-        self.simulator = simulator(self.GNSS, self)
+        self.simulator = simulator(self.GNSS, self.ADCS, self.EPS, self)
         self.displayController.addSimulator(self.simulator)
 
     def run(self):

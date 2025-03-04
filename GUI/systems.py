@@ -44,9 +44,21 @@ class EPS(system):
     """
     def __init__(self, name, controller, port=0):
         system.__init__(self, name, controller, port)
-        self.charge = 100
+        self.charge = 50
+        self.power_saving = False
         self.status = EPSState.SIMULATED
 
+    def set_ps_on(self):
+        if not self.power_saving:
+            self.power_saving = True
+            return True
+        return False
+
+    def set_ps_off(self):
+        if self.power_saving:
+            self.power_saving = False
+            return True
+        return False
 
 class EPSState(Enum):
     """
@@ -106,7 +118,6 @@ class dragSail(system):
 class ADCS(system):
     """
     System for simulating the Attitude Direction Control System in Audimus
-    TODO: either fully integrate pitch roll yaw, or switch to another direction format
     """
     def __init__(self, name, controller, port=0):
         system.__init__(self, name, controller, port)
@@ -116,17 +127,30 @@ class ADCS(system):
         self.status = GNSS_ADCSState.SIMULATED
         self.mode = ADCS_mode.OFF
 
-    def satAngle(self):
-        pass
+    def simulate(self, angel):
+        if self.status == GNSS_ADCSState.MANUAL:
+            return
+        self.pitch = angel[0]
+        self.roll = angel[1]
+        self.yaw = angel[2]
 
     def set_off(self):
-        return True
+        if self.mode != ADCS_mode.OFF:
+            self.mode = ADCS_mode.OFF
+            return True
+        return False
 
     def set_de_tumbling(self):
-        return True
+        if self.mode != ADCS_mode.DETUMBLING:
+            self.mode = ADCS_mode.DETUMBLING
+            return True
+        return False
 
     def set_sun_pointing(self):
-        return True
+        if self.mode != ADCS_mode.SUN_POINTING:
+            self.mode = ADCS_mode.SUN_POINTING
+            return True
+        return False
 
 class ADCS_mode(Enum):
     """
@@ -262,7 +286,10 @@ class TTC(system):
 
     def __init__(self, name, controller, port=0):
         system.__init__(self, name, controller, port)
-        self.ode = TTC_mode.OFF
+        self.mode = TTC_mode.OFF
+        self.gs_status = TTC_GS_status.NO_RESPONSE
+        self.connection_radius = 500
+
 
     def send_msg(self):
         return b'TEST'
@@ -271,13 +298,28 @@ class TTC(system):
         return True
 
     def set_off(self):
-        return True
+        if self.mode != TTC_mode.OFF:
+            self.mode = TTC_mode.OFF
+            return True
+        return False
 
     def set_beaconing(self):
-        return True
+        if self.mode != TTC_mode.BEACONING:
+            self.mode = TTC_mode.BEACONING
+            return True
+        return False
 
     def set_connecting(self):
-        return True
+        if self.mode == TTC_mode.OFF:
+            self.mode = TTC_mode.CONNECTING
+            return True
+        return False
+
+    def set_broadcast_no_con(self):
+        if self.mode == TTC_mode.CONNECTING:
+            self.mode = TTC_mode.BROADCAST_NO_CON
+            return True
+        return False
 
 class TTC_mode(Enum):
     """
@@ -286,5 +328,17 @@ class TTC_mode(Enum):
     OFF = 0
     BEACONING = 1
     CONNECTING = 2
-    ESTABLISHED = 3
+    ESTABLISHED_DATA = 3
+    ESTABLISHED_CONT = 4
+    BROADCAST_NO_CON = 5
+    DISCONNECTED = 6
+
+class TTC_GS_status(Enum):
+    """
+    Enum to record the operational mode of the Ground Station, mainly weather to respond to TTC or not
+    """
+    NO_RESPONSE = 0
+    CONNECTION_DATA = 1
+    CONNECTION_CONTROL = 2
+
 

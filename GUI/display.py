@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import PySimpleGUI as sg
 import numpy as np
 import time
-from systems import EPSState, ESPState, GNSS_ADCSState, audioState, GNSS_TRAIL_SIZE
+from systems import EPSState, ESPState, GNSS_ADCSState, audioState, GNSS_TRAIL_SIZE, ADCS_mode, TTC_mode, TTC_GS_status
 from globe import GLOBE
 
 
@@ -318,8 +318,9 @@ class epsDisplay(subDisplay):
     def generateLayoutBody(self):
         options = ('Manual', 'Simulated', 'Decreasing', 'Charging')
 
-        self.layout.append([[sg.Text('EPS Charge:\t'), sg.Text(f'{self.system.charge}%\t', key='-CHARGE-'),
+        self.layout.append([[sg.Text('EPS Charge:\t'), sg.Text(f'{round(self.system.charge,2)}%\t', key='-CHARGE-'),
                             sg.Input(size=(4, 1), key='-INPUT_CHARGE-'), sg.Button('Set Charge', key='-SET_CHARGE-')],
+                            [sg.Text('Power Saving:\t'), sg.Text(f'{"ON" if self.system.power_saving else "OFF"}\t', key='-PS-'), sg.Button('Enable', key='-PS_ON-'), sg.Button('Disable', key='-PS_OFF-')],
                             [sg.Text('Sim Status:\t'), sg.Text(f'{self.system.status.name}\t', key='-STATUS-'),
                             sg.Listbox(options, size=(10, len(options)), key='-STATUS_OPTIONS-'), sg.Button('Set Status', key='-SET_STATUS-')]
                             ]
@@ -328,8 +329,9 @@ class epsDisplay(subDisplay):
     def refresh(self):
         if self.window:
             self.window['-HEALTH-'].update(f'{self.system.voltage} V\t{self.system.temp}°C\t Port Status: {"CONNECTED" if self.system.interface.connected else "NOT CONNECTED"}')
-            self.window['-CHARGE-'].update(f'{self.system.charge}%\t')
+            self.window['-CHARGE-'].update(f'{round(self.system.charge, 2)}%\t')
             self.window['-STATUS-'].update(f'{self.system.status.name}\t')
+            self.window['-PS-'].update(f'{"ON" if self.system.power_saving else "OFF"}\t')
 
     def handleEvent(self, event, values):
         if event == sg.WIN_CLOSED or event == '-CLOSE-':
@@ -356,6 +358,10 @@ class epsDisplay(subDisplay):
                 self.system.status = EPSState.DECREASING
             elif values['-STATUS_OPTIONS-'][0] == 'Charging':
                 self.system.status = EPSState.CHARGING
+        elif event == '-PS_ON-':
+            self.system.power_saving = True
+        elif event == '-PS_OFF-':
+            self.system.power_saving = False
         self.refresh()
 
 
@@ -438,26 +444,31 @@ class dragSailDisplay(subDisplay):
 class adcsDisplay(subDisplay):
 
     def generateLayoutBody(self):
-        options = ('Manual', 'Simulated')
+        options_status = ('Manual', 'Simulated')
+        options_mode = ('Off', 'Detumbling', 'Sun pointing')
 
-        self.layout.append([[sg.Text('Pitch:\t\t'), sg.Text(f'{self.system.pitch}°\t', key='-PITCH-'),
+        self.layout.append([[sg.Text('Pitch:\t\t'), sg.Text(f'{round(self.system.pitch,2)}°\t', key='-PITCH-'),
                              sg.Input(size=(6, 1), key='-INPUT_PITCH-'), sg.Button('Set Pitch', key='-SET_PITCH-')],
-                            [sg.Text('Roll:\t\t'), sg.Text(f'{self.system.roll}°\t', key='-ROLL-'),
+                            [sg.Text('Roll:\t\t'), sg.Text(f'{round(self.system.roll,2)}°\t', key='-ROLL-'),
                              sg.Input(size=(6, 1), key='-INPUT_ROLL-'), sg.Button('Set Roll', key='-SET_ROLL-')],
-                            [sg.Text('Yaw:\t\t'), sg.Text(f'{self.system.yaw}°\t', key='-YAW-'),
+                            [sg.Text('Yaw:\t\t'), sg.Text(f'{round(self.system.yaw,2)}°\t', key='-YAW-'),
                              sg.Input(size=(6, 1), key='-INPUT_YAW-'), sg.Button('Set Yaw', key='-SET_YAW-')],
+                            [sg.Text('ADCS Mode:\t'), sg.Text(f'{self.system.mode.name}\t', key='-MODE-'),
+                             sg.Listbox(options_mode, size=(12, len(options_mode)), key='-MODE_OPTIONS-'),
+                             sg.Button('Set Mode', key='-SET_MODE-')],
                             [sg.Text('Sim Status:\t'), sg.Text(f'{self.system.status.name}\t', key='-STATUS-'),
-                             sg.Listbox(options, size=(10, len(options)), key='-STATUS_OPTIONS-'),
+                             sg.Listbox(options_status, size=(10, len(options_status)), key='-STATUS_OPTIONS-'),
                              sg.Button('Set Status', key='-SET_STATUS-')]
                             ])
 
     def refresh(self):
         if self.window:
             self.window['-HEALTH-'].update(f'{self.system.voltage} V\t{self.system.temp}°C\t Port Status: {"CONNECTED" if self.system.interface.connected else "NOT CONNECTED"}')
-            self.window['-PITCH-'].update(f'{self.system.pitch}°\t')
-            self.window['-ROLL-'].update(f'{self.system.roll}°\t')
-            self.window['-YAW-'].update(f'{self.system.yaw}°\t')
+            self.window['-PITCH-'].update(f'{round(self.system.pitch,2)}°\t')
+            self.window['-ROLL-'].update(f'{round(self.system.roll,2)}°\t')
+            self.window['-YAW-'].update(f'{round(self.system.yaw,2)}°\t')
             self.window['-STATUS-'].update(f'{self.system.status.name}\t')
+            self.window['-MODE-'].update(f'{self.system.mode.name}\t')
 
     def handleEvent(self, event, values):
         if event == sg.WIN_CLOSED or event == '-CLOSE-':
@@ -500,6 +511,13 @@ class adcsDisplay(subDisplay):
                 self.system.status = GNSS_ADCSState.MANUAL
             elif values['-STATUS_OPTIONS-'][0] == 'Simulated':
                 self.system.status = GNSS_ADCSState.SIMULATED
+        elif event == '-SET_MODE-':
+            if values['-MODE_OPTIONS-'][0] == 'Off':
+                self.system.mode = ADCS_mode.OFF
+            elif values['-MODE_OPTIONS-'][0] == 'Detumbling':
+                self.system.mode = ADCS_mode.DETUMBLING
+            elif values['-MODE_OPTIONS-'][0] == 'Sun pointing':
+                self.system.mode = ADCS_mode.SUN_POINTING
         self.refresh()
 
 
@@ -675,6 +693,79 @@ class obcDisplay(subDisplay):
             return
         elif event == '-REFRESH-':
             pass
+        self.refresh()
+
+class ttcDisplay(subDisplay):
+    """
+
+    Link for determing when to connect or not https://www.askpython.com/python/examples/find-distance-between-two-geo-locations
+    """
+    def generateLayoutBody(self):
+        options_mode = ('Off', 'Beaconing', 'Connecting', 'Established Data', 'Established Control', 'Broadcast No Connection', 'Disconnected')
+
+        self.layout.append([[sg.Text('TTC:')],
+                            [sg.Text('TTC Mode:\t'), sg.Text(f'{self.system.mode.name}\t', key='-MODE-'),
+                             sg.Listbox(options_mode, size=(len('Broadcast No Connection'), len(options_mode)), key='-MODE_OPTIONS-'),
+                             sg.Button('Set Mode', key='-SET_MODE-')],
+                            [sg.HorizontalSeparator()],
+                            [sg.Text('Ground Station:')],
+                            [sg.Text('Connection Range\t'), sg.Text(f'{self.system.connection_radius} km\t', key='-RANGE-'),
+                            sg.Input(size=(10, 1), key='-INPUT_RANGE-'), sg.Button('Set Range', key='-SET_RANGE-')],
+                            [sg.Radio('No Response', group_id=1, default=True, enable_events=True, key='-NO_RESP-'), sg.Radio('Connect Data', group_id=1, enable_events=True, key='-CON_DATA-'), sg.Radio('Connect Control', group_id=1, enable_events=True, key='-CON_CONT-')],
+                            [sg.HorizontalSeparator()],
+                            [sg.Text('Communication Channel:\t Output:')],
+                            [sg.Multiline(write_only=True, size=(100, 20), key='-OUTPUT-')],
+                            [sg.Text('Input:')],
+                            [sg.Input(size=(90, 1), key='-INPUT_COMMAND-'), sg.Button('Send', key='-SEND_COMMAND-', size=(10, 1))]
+                            ])
+
+    def refresh(self):
+        if self.window:
+            self.window['-HEALTH-'].update(f'{self.system.voltage} V\t{self.system.temp}°C\t Port Status: {"CONNECTED" if self.system.interface.connected else "NOT CONNECTED"}')
+            self.window['-MODE-'].update(f'{self.system.mode.name}\t')
+            self.window['-RANGE-'].update(f'{self.system.connection_radius} km\t')
+
+    def handleEvent(self, event, values):
+        if event == sg.WIN_CLOSED or event == '-CLOSE-':
+            self.close()
+            return
+        elif event == '-REFRESH-':
+            pass
+        elif event == '-SET_MODE-':
+            if values['-MODE_OPTIONS-'][0] == 'Off':
+                self.system.mode = TTC_mode.OFF
+            elif values['-MODE_OPTIONS-'][0] == 'Beaconing':
+                self.system.mode = TTC_mode.BEACONING
+            elif values['-MODE_OPTIONS-'][0] == 'Connecting':
+                self.system.mode = TTC_mode.CONNECTING
+            elif values['-MODE_OPTIONS-'][0] == 'Established Data':
+                self.system.mode = TTC_mode.ESTABLISHED_DATA
+            elif values['-MODE_OPTIONS-'][0] == 'Established Control':
+                self.system.mode = TTC_mode.ESTABLISHED_CONT
+            elif values['-MODE_OPTIONS-'][0] == 'Broadcast No Connection':
+                self.system.mode = TTC_mode.BROADCAST_NO_CON
+            elif values['-MODE_OPTIONS-'][0] == 'Disconnected':
+                self.system.mode = TTC_mode.DISCONNECTED
+        elif event == '-SET_RANGE-':
+            try:
+                val = float(values['-INPUT_RANGE-'])
+                if val < 0:
+                    val = 0
+                self.system.connection_radius = val
+            except ValueError:
+                pass
+        elif event == '-NO_RESP-':
+            self.system.gs_status = TTC_GS_status.NO_RESPONSE
+        elif event == '-CON_DATA-':
+            self.system.gs_status = TTC_GS_status.CONNECTION_DATA
+        elif event == '-CON_CONT-':
+            self.system.gs_status = TTC_GS_status.CONNECTION_CONTROL
+        elif event == '-SEND_COMMAND-':
+            try:
+                command = str(values['-INPUT_COMMAND-'])
+                self.window['-OUTPUT-'].print(f' >>> {command}')
+            except ValueError:
+                pass
         self.refresh()
 
 

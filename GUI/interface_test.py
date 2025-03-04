@@ -145,6 +145,100 @@ class interface_testerLAN:
         except:
             print(f"{self.port}: Could not get health data, received wrong responses")
 
+    def test_eps(self):
+        """
+        Tests all functionality of the EPS module interface, works as proof of concept for all other modules
+        """
+        print(f"{self.port}: Testing full scope of EPS")
+        if not self.connected:
+            # Return if connection not established first
+            print(f"{self.port}: Could not test full scope of EPS, not connected to in first place")
+            return
+
+        # Creates both protobuf objects
+        msg = pb.AROS_Command()
+        rsp = pb.Simulator_Response()
+
+        try:
+            msg.command = pb.COMMAND.DRAG_GET_MODE
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_ERROR
+            print(f"{self.port}: Successfully got error from asking EPS for drag sail data")
+        except:
+            print(f"{self.port}: Failed to get error from asking EPS for drag sail data")
+
+        try:
+            msg.command = pb.COMMAND.EPS_GET_CHARGE
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_RETURN_SINGLE and rsp.HasField('single')
+            charge = rsp.single
+            print(f"{self.port}: Successfully checked EPS has charge and it's at {charge}%")
+        except:
+            print(f"{self.port}: Failed to get charge from EPS")
+
+        try:
+            msg.command = pb.COMMAND.EPS_GET_PS
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.EPS_PS_OFF
+            print(f"{self.port}: Successfully checked EPS power saving status, and it was OFF")
+        except:
+            print(f"{self.port}: Failed to check the power saving status of EPS")
+
+        try:
+            msg.command = pb.COMMAND.EPS_SET_PS_ON
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_SUCCESS
+            print(f"{self.port}: Successfully set EPS power saving to on")
+        except:
+            print(f"{self.port}: Failed to set the power saving status of EPS")
+
+        try:
+            msg.command = pb.COMMAND.EPS_GET_PS
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.EPS_PS_ON
+            print(f"{self.port}: Successfully checked EPS power saving status, and it was ON")
+        except:
+            print(f"{self.port}: Failed to check the power saving status of EPS")
+
+        try:
+            msg.command = pb.COMMAND.EPS_SET_PS_OFF
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_SUCCESS
+            print(f"{self.port}: Successfully set EPS power saving to off")
+        except:
+            print(f"{self.port}: Failed to set the power saving status of EPS")
+
+
 if __name__ == "__main__":
     """
     Tests the generic functionality of the interfaceLAN objects from interfaces.py.
@@ -152,7 +246,7 @@ if __name__ == "__main__":
     """
     test_systems = []
     # list of ports used by systems
-    ports = (8001, 8002, 8003, 8004, 8005, 8006, 8007)
+    ports = (8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008)
 
     for port in ports:
         # For each system, create a tester with its port and connect to it
@@ -167,6 +261,8 @@ if __name__ == "__main__":
     for system_tester in test_systems:
         # For each system, request and receive all health data
         system_tester.get_health()
+
+    test_systems[0].test_eps()
 
     cnt = 0
     while True:

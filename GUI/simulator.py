@@ -1,11 +1,18 @@
 import numpy as np
+import random
 import time
+from systems import ADCS_mode, EPSState
 
 # Constants
 mu = 398600.4418  # Earth's gravitational parameter, km^3/s^2
 Re = 6378.1  # Earth's radius, km
 omega_earth = 7.2921159e-5  # Earth's angular velocity, rad/s
 
+# Rotational constants
+AV = 50  # Angular velocity ranges (divided by 10)
+
+# Charging constants
+rate = 0.01  # Charging and Discharging rate of battery
 
 class simulator:
     """
@@ -15,10 +22,12 @@ class simulator:
     The core code was generated using ChatGPT since orbital mechanics are above my pay grade.
     """
 
-    def __init__(self, GNSS, controller):
+    def __init__(self, GNSS, ADCS, EPS, controller):
 
         self.running = False
         self.GNSS = GNSS
+        self.ADCS = ADCS
+        self.EPS = EPS
         self.controller = controller
 
         # Orbital elements (default values)
@@ -41,6 +50,11 @@ class simulator:
         # Position and velocity vectors, used once initialized
         self.position = [0, 0, 0]
         self.velocity = [0, 0, 0]
+
+        # Pitch Roll and Yaw (and their angular velocity) for ADCS
+        self.angel = [0, 0, 0]
+        self.angular_velocity = [random.randint(-AV, AV)/10, random.randint(-AV, AV)/10, random.randint(-AV, AV)/10]
+        self.tumbling = True
 
 
     def orbital_elements_to_state_vectors(self):
@@ -106,14 +120,74 @@ class simulator:
         alt = np.linalg.norm(self.position) - Re
         return lat, long, alt
 
+    def propagate_angular_velocity(self):
+        for i in range(0, 3):
+            # For each of the three angels of rotation, propagate the initialized velocity using time step
+            self.angel[i] += self.angular_velocity[i] * self.dt
+            # Loop around each value so stays between -180 and 180
+            if self.angel[i] > 180:
+                self.angel[i] -= 360
+            elif self.angel[i] < -180:
+                self.angel[i] += 360
+
+        if self.ADCS.mode == ADCS_mode.DETUMBLING and self.tumbling:
+            # detumbling decrees angular velocity
+            for i in range(0, 3):
+                if abs(self.angular_velocity[i]) < 0.2 * self.dt:
+                    # if close enough to zero, set to zero
+                    self.angular_velocity[i] = 0
+                # else slowly move towards zero
+                elif self.angular_velocity[i] > 0:
+                    self.angular_velocity[i] -= 0.1 * self.dt
+                elif self.angular_velocity[i] < 0:
+                    self.angular_velocity[i] += 0.1 * self.dt
+            if self.angular_velocity == [0, 0, 0]:
+                self.tumbling = False
+
+        if self.ADCS.mode == ADCS_mode.SUN_POINTING and not self.tumbling:
+            # detumbling angel to point to sun
+            for i in range(0, 3):
+                if abs(self.angel[i]) < 2 * self.dt:
+                    # if close enough to zero, set to zero
+                    self.angel[i] = 0
+                # else slowly move towards zero
+                elif self.angel[i] > 0:
+                    self.angel[i] -= 1 * self.dt
+                elif self.angel[i] < 0:
+                    self.angel[i] += 1 * self.dt
+
+    def propagate_charge(self):
+        if self.EPS.status == EPSState.MANUAL:
+            # If manual return
+            return
+        elif self.EPS.status == EPSState.DECREASING or (self.position[0] < 0 and self.EPS.status == EPSState.SIMULATED):
+            # If decreasing then decrease charge with every time step
+            if self.EPS.charge > 0:
+                self.EPS.charge -= (rate/2 if self.EPS.power_saving else rate) * self.dt
+            elif self.EPS.charge < 0:
+                self.EPS.charge = 0
+
+        elif self.EPS.status == EPSState.CHARGING or (self.position[0] > 0 and self.EPS.status == EPSState.SIMULATED):
+            # If charging then increase charge with every time step
+            if self.EPS.charge < 100:
+                self.EPS.charge += (rate * 2 if self.EPS.power_saving else rate) * self.dt
+            elif self.EPS.charge > 100:
+                self.EPS.charge = 100
+
     def doTimeStep(self):
         """
         Advacne time forward one timestep, calculate new position and send it to GNSS
         """
         self.propagate_orbit()
+        self.propagate_angular_velocity()
+        self.propagate_charge()
         self.time = self.time + self.dt
+
         lat, long, alt = self.cartesian_to_geodetic()
         self.GNSS.simulate(lat, long, alt)
+
+        self.ADCS.simulate(self.angel)
+
 
     def run(self, _):
         """

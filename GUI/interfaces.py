@@ -207,6 +207,21 @@ class interfaceLAN_EPS(interfaceLAN):
         elif aros_com.command == pb.COMMAND.EPS_GET_CHARGE:
             sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
             sim_resp.single = self.system.charge
+        elif aros_com.command == pb.COMMAND.EPS_GET_PS:
+            if self.system.power_saving:
+                sim_resp.response = pb.RESPONSE.EPS_PS_ON
+            else:
+                sim_resp.response = pb.RESPONSE.EPS_PS_OFF
+        elif aros_com.command == pb.COMMAND.EPS_SET_PS_ON:
+            if self.system.set_ps_on():
+                sim_resp.response = pb.RESPONSE.GEN_SUCCESS
+            else:
+                sim_resp.response = pb.RESPONSE.GEN_ERROR
+        elif aros_com.command == pb.COMMAND.EPS_SET_PS_OFF:
+            if self.system.set_ps_off():
+                sim_resp.response = pb.RESPONSE.GEN_SUCCESS
+            else:
+                sim_resp.response = pb.RESPONSE.GEN_ERROR
         else:
             sim_resp.response = pb.RESPONSE.GEN_ERROR
 
@@ -492,23 +507,34 @@ class interfaceLAN_TTC(interfaceLAN):
                 sim_resp.response = pb.RESPONSE.TTC_BEACONING
             elif self.system.mode == TTC_mode.CONNECTING:
                 sim_resp.response = pb.RESPONSE.TTC_CONNECTING
-            elif self.system.mode == TTC_mode.ESTABLISHED:
-                sim_resp.response = pb.RESPONSE.TTC_ESTABLISHED
+            elif self.system.mode == TTC_mode.ESTABLISHED_DATA:
+                sim_resp.response = pb.RESPONSE.TTC_ESTABLISHED_DATA
+            elif self.system.mode == TTC_mode.ESTABLISHED_CONT:
+                sim_resp.response = pb.RESPONSE.TTC_ESTABLISHED_CONT
+            elif self.system.mode == TTC_mode.BROADCAST_NO_CON:
+                sim_resp.response = pb.RESPONSE.TTC_BROADCAST_NO_CON
+            elif self.system.mode == TTC_mode.DISCONNECTED:
+                sim_resp.response = pb.RESPONSE.TTC_DISCONNECTED
         elif aros_com.command == pb.COMMAND.TTC_GET_BYTE_STRING:
             sim_resp.response = pb.RESPONSE.GEN_RETURN_BYTE_STRING
             sim_resp.byte_string = self.system.get_msg()
         elif aros_com.command == pb.COMMAND.TTC_SET_OFF:
-            if self.system.set_on():
+            if self.system.set_off():
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS
             else:
                 sim_resp.response = pb.RESPONSE.GEN_ERROR
         elif aros_com.command == pb.COMMAND.TTC_SET_BEACONING:
-            if self.system.set_on():
+            if self.system.set_beaconing():
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS
             else:
                 sim_resp.response = pb.RESPONSE.GEN_ERROR
         elif aros_com.command == pb.COMMAND.TTC_SET_CONNECTING:
-            if self.system.set_on():
+            if self.system.set_connecting():
+                sim_resp.response = pb.RESPONSE.GEN_SUCCESS
+            else:
+                sim_resp.response = pb.RESPONSE.GEN_ERROR
+        elif aros_com.command == pb.COMMAND.TTC_SET_BROADCAST_NO_CON:
+            if self.system.set_broadcast_no_con():
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS
             else:
                 sim_resp.response = pb.RESPONSE.GEN_ERROR
