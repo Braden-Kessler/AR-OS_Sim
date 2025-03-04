@@ -1,7 +1,6 @@
 import math
-from abc import ABC, abstractmethod
+from abc import ABC
 from enum import Enum
-import socket
 from queue import Queue
 from threading import Lock
 
@@ -256,6 +255,7 @@ class Pi_VHF(system):
         system.__init__(self, name, controller, port)
         # Pi status
         self.enabled = False
+        self.connected = False
         # Audio Status
         self.audio_filepath = ""
         self.audio_status = audioState.NO_DATA
@@ -271,6 +271,7 @@ class Pi_VHF(system):
             self.byte_to_send = f.read()
             f.close()
             self.audio_status = audioState.UNSENT
+            print(len(self.byte_to_send))
         except:
             self.audio_status = audioState.ERROR_LOADING
 
@@ -309,6 +310,7 @@ class TTC(system):
         self.mode = TTC_mode.OFF
         self.gs_status = TTC_GS_status.NO_RESPONSE
         self.connection_radius = 500
+        self.connected = True
 
 
     def send_msg(self):

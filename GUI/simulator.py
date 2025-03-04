@@ -1,7 +1,9 @@
 import numpy as np
 import random
 import time
-from systems import ADCS_mode, EPSState
+from haversine import haversine, Unit
+from systems import ADCS_mode, EPSState, TTC_mode, TTC_GS_status
+from display import KINGSTON
 
 # Constants
 mu = 398600.4418  # Earth's gravitational parameter, km^3/s^2
@@ -11,7 +13,7 @@ omega_earth = 7.2921159e-5  # Earth's angular velocity, rad/s
 # Rotational constants
 AV = 50  # Angular velocity ranges (divided by 10)
 
-# Charging constants
+# Charging constants for Power Supply
 rate = 0.01  # Charging and Discharging rate of battery
 
 class simulator:
@@ -22,13 +24,15 @@ class simulator:
     The core code was generated using ChatGPT since orbital mechanics are above my pay grade.
     """
 
-    def __init__(self, GNSS, ADCS, EPS, controller):
+    def __init__(self, controller):
 
         self.running = False
-        self.GNSS = GNSS
-        self.ADCS = ADCS
-        self.EPS = EPS
         self.controller = controller
+        self.GNSS = self.controller.GNSS
+        self.ADCS = self.controller.ADCS
+        self.EPS = self.controller.EPS
+        self.Pi_VHF = self.controller.Pi_VHF
+        self.TTC = self.controller.TTC
 
         # Orbital elements (default values)
         self.semiMajor = 7000  # Semi-major axis, km
@@ -121,6 +125,9 @@ class simulator:
         return lat, long, alt
 
     def propagate_angular_velocity(self):
+        """
+        Propagates angular velocities to current orientation, apply ADCS state to correct tumbling and error.
+        """
         for i in range(0, 3):
             # For each of the three angels of rotation, propagate the initialized velocity using time step
             self.angel[i] += self.angular_velocity[i] * self.dt
@@ -157,26 +164,66 @@ class simulator:
                     self.angel[i] += 1 * self.dt
 
     def propagate_charge(self):
+        """
+        Propagates the charging of ESP based on current state and position of Audimus
+        """
         if self.EPS.status == EPSState.MANUAL:
-            # If manual return
+            # If manual return, since no change to charge
             return
+
+        # Decrease if set to DECREASING, or simulated and x < 0
         elif self.EPS.status == EPSState.DECREASING or (self.position[0] < 0 and self.EPS.status == EPSState.SIMULATED):
-            # If decreasing then decrease charge with every time step
+            # If decreasing then decrease charge with every time step, don't go below 0
             if self.EPS.charge > 0:
                 self.EPS.charge -= (rate/2 if self.EPS.power_saving else rate) * self.dt
             elif self.EPS.charge < 0:
                 self.EPS.charge = 0
 
+        # Increase if set to INCREASING, or simulated and x > 0
         elif self.EPS.status == EPSState.CHARGING or (self.position[0] > 0 and self.EPS.status == EPSState.SIMULATED):
-            # If charging then increase charge with every time step
+            # If charging then increase charge with every time step, dont go above 100
             if self.EPS.charge < 100:
                 self.EPS.charge += (rate * 2 if self.EPS.power_saving else rate) * self.dt
             elif self.EPS.charge > 100:
                 self.EPS.charge = 100
 
+    def check_connectivity_for(self):
+        """
+        Checks and updates TTC and Pi if within range of poitns during simulation
+        """
+        # Determines distance from current location to sonarbouy and ground station
+        current = (self.GNSS.latitude, self.GNSS.longitude)
+        sonarbouy = (self.Pi_VHF.latitude, self.Pi_VHF.longitude)
+        groundStation = (KINGSTON[1], KINGSTON[0]) # inverts order of lat and long since map uses it as x and y
+
+        distance_to_sonarbouy = haversine(current, sonarbouy, unit=Unit.KILOMETERS)
+        distance_to_groundStation = haversine(current, groundStation, unit=Unit.KILOMETERS)
+        print(f"distance to sonarbout is {distance_to_sonarbouy} and distance to GS is {distance_to_groundStation}")
+
+        # If within range on sonarbouy, then they are connected for internal purposes, and data is allowed to be sent
+        if distance_to_sonarbouy <= self.Pi_VHF.connection_radius:
+            self.Pi_VHF.connected = True
+        else:
+            self.Pi_VHF.connected = False
+
+        if distance_to_groundStation <= self.TTC.connection_radius:
+            self.TTC.connected = True
+            if self.TTC.gs_status == TTC_GS_status.NO_RESPONSE:
+                pass
+            elif self.TTC.gs_status == TTC_GS_status.CONNECTION_DATA and (self.TTC.mode == TTC_mode.BEACONING or self.TTC.mode == TTC_mode.CONNECTING):
+                self.TTC.mode = TTC_mode.ESTABLISHED_DATA
+            elif self.TTC.gs_status == TTC_GS_status.CONNECTION_CONTROL and (self.TTC.mode == TTC_mode.BEACONING or self.TTC.mode == TTC_mode.CONNECTING):
+                self.TTC.mode = TTC_mode.ESTABLISHED_CONT
+        else:
+            self.TTC.connected = False
+            if self.TTC.mode == TTC_mode.ESTABLISHED_DATA or self.TTC.mode == TTC_mode.ESTABLISHED_CONT:
+                self.TTC.mode = TTC_mode.DISCONNECTED
+
+
     def doTimeStep(self):
         """
-        Advacne time forward one timestep, calculate new position and send it to GNSS
+        Advacne time forward one timestep, calculate new position and send it to GNSS, calculate new orientation and send
+        it to ADCS, update charge in ESP, and connect/disconnect radio systems.
         """
         self.propagate_orbit()
         self.propagate_angular_velocity()
@@ -187,6 +234,8 @@ class simulator:
         self.GNSS.simulate(lat, long, alt)
 
         self.ADCS.simulate(self.angel)
+
+        self.check_connectivity_for()
 
 
     def run(self, _):

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import PySimpleGUI as sg
 import numpy as np
 import time
-from systems import EPSState, ESPState, GNSS_ADCSState, audioState, GNSS_TRAIL_SIZE, ADCS_mode, TTC_mode, TTC_GS_status
+from systems import EPSState, ESPState, GNSS_ADCSState, GNSS_TRAIL_SIZE, ADCS_mode, TTC_mode, TTC_GS_status
 from globe import GLOBE
 
 KINGSTON = (-76.4930, 44.2334)
@@ -676,7 +676,7 @@ class pi_vhfDisplay(subDisplay):
                             [sg.HorizontalSeparator()],
                             [sg.Text('Enter Audio File to Send:')],
                             [sg.Text('File Path:\t'), sg.Text(f'{self.system.audio_filepath if self.system.audio_filepath != "" else "No File Selected"}', key='-AUDIO_FILEPATH_OUTPUT-')],
-                            [sg.Input(key='-AUDIO_FILEPATH-'), sg.FileBrowse(key='-BROWSE-', file_types=['typeName {wav}'], enable_events=True)],
+                            [sg.Input(key='-AUDIO_FILEPATH-', size=(70, 1)), sg.FileBrowse(key='-BROWSE-', enable_events=True)], #file_types=['typeName {wav},{txt}']
                             [sg.Button('Set File', key='-SET_FILE-')],
                             [sg.Text('Audio Status:\t'), sg.Text(f'{self.system.audio_status.name}\t', key='-AUDIO_STATUS-')]
                             ]
@@ -687,7 +687,7 @@ class pi_vhfDisplay(subDisplay):
             self.window['-HEALTH-'].update(f'{self.system.voltage} V\t{self.system.temp}°C\t Port Status: {"CONNECTED" if self.system.interface.connected else "NOT CONNECTED"}')
             self.window['-RADIO_STATUS-'].update(f'{"LISTENING" if self.system.enabled else "OFF"}\t')
             self.window['-AUDIO_STATUS-'].update(f'{self.system.audio_status.name}\t')
-            self.window['-AUDIO_FILEPATH-'].update(f'{self.system.audio_filepath}')
+            # self.window['-AUDIO_FILEPATH-'].update(f'{self.system.audio_filepath}')
             self.window['-AUDIO_FILEPATH_OUTPUT-'].update(f'{self.system.audio_filepath if self.system.audio_filepath != "" else "No File Selected"}')
             self.window['-RANGE-'].update(f'{self.system.connection_radius} km\t')
             self.window['-LAT-'].update(f'{abs(self.system.latitude)} {"N" if self.system.latitude >= 0 else "S"}\t')

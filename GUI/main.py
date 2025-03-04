@@ -74,7 +74,7 @@ class controller:
         self.systems.append(self.TTC)
 
         # Simulator
-        self.simulator = simulator(self.GNSS, self.ADCS, self.EPS, self)
+        self.simulator = simulator(self)
         self.displayController.addSimulator(self.simulator)
 
     def run(self):
