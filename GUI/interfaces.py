@@ -519,8 +519,11 @@ class interfaceLAN_TTC(interfaceLAN):
             elif self.system.mode == TTC_mode.DISCONNECTED:
                 sim_resp.response = pb.RESPONSE.TTC_DISCONNECTED
         elif aros_com.command == pb.COMMAND.TTC_GET_BYTE_STRING:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_BYTE_STRING
-            sim_resp.byte_string = self.system.get_msg()
+            if self.system.mode == TTC_mode.ESTABLISHED_DATA or self.system.mode == TTC_mode.ESTABLISHED_CONT or self.system.mode == TTC_mode.BROADCAST_NO_CON:
+                sim_resp.response = pb.RESPONSE.GEN_RETURN_BYTE_STRING
+                sim_resp.byte_string = self.system.get_msg()
+            else:
+                sim_resp.response = pb.RESPONSE.GEN_ERROR
         elif aros_com.command == pb.COMMAND.TTC_SET_OFF:
             if self.system.set_off():
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS
@@ -542,8 +545,23 @@ class interfaceLAN_TTC(interfaceLAN):
             else:
                 sim_resp.response = pb.RESPONSE.GEN_ERROR
         elif aros_com.command == pb.COMMAND.TTC_SEND_BYTE_STRING:
-            msg = aros_com.byte_string
-            if self.system.recv_msg(msg):
+            if aros_com.HasField('byte_string'):
+                msg = aros_com.byte_string
+            if self.system.recv_msg(msg=msg):
+                sim_resp.response = pb.RESPONSE.GEN_SUCCESS
+            else:
+                sim_resp.response = pb.RESPONSE.GEN_ERROR
+        elif aros_com.command == pb.COMMAND.TTC_SEND_HEALTH:
+            if aros_com.HasField('byte_string'):
+                msg = aros_com.byte_string
+            if self.system.recv_health(msg=msg):
+                sim_resp.response = pb.RESPONSE.GEN_SUCCESS
+            else:
+                sim_resp.response = pb.RESPONSE.GEN_ERROR
+        elif aros_com.command == pb.COMMAND.TTC_SEND_AUDIO:
+            if aros_com.HasField('byte_string'):
+                msg = aros_com.byte_string
+            if self.system.recv_audio(msg=msg):
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS
             else:
                 sim_resp.response = pb.RESPONSE.GEN_ERROR

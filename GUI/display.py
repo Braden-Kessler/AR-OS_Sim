@@ -757,7 +757,6 @@ class obcDisplay(subDisplay):
 
 class ttcDisplay(subDisplay):
     """
-
     Link for determing when to connect or not https://www.askpython.com/python/examples/find-distance-between-two-geo-locations
     """
     def generateLayoutBody(self):
@@ -784,6 +783,9 @@ class ttcDisplay(subDisplay):
             self.window['-HEALTH-'].update(f'{self.system.voltage} V\t{self.system.temp}°C\t Port Status: {"CONNECTED" if self.system.interface.connected else "NOT CONNECTED"}')
             self.window['-MODE-'].update(f'{self.system.mode.name}\t')
             self.window['-RANGE-'].update(f'{self.system.connection_radius} km\t')
+            if self.system.console_output != "":
+                self.window['-OUTPUT-'].print(self.system.console_output)
+                self.system.console_output = ""
 
     def handleEvent(self, event, values):
         if event == sg.WIN_CLOSED or event == '-CLOSE-':
@@ -823,10 +825,13 @@ class ttcDisplay(subDisplay):
         elif event == '-SEND_COMMAND-':
             try:
                 command = str(values['-INPUT_COMMAND-'])
-                self.window['-OUTPUT-'].print(f' >>> {command}')
+                self.system.gs_send_command(command)
             except ValueError:
                 pass
         self.refresh()
+
+    def print_to_console(self, msg):
+        self.window['-OUTPUT-'].print(msg)
 
 
 class sohPopup:

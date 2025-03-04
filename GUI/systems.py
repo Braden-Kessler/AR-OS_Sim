@@ -293,8 +293,6 @@ class Pi_VHF(system):
             self.byte_to_send = b''
             self.audio_status = audioState.SENT
 
-        # print(f"Sending message {msg}")
-
         return msg
 
     def set_on(self):
@@ -332,16 +330,108 @@ class TTC(system):
 
     def __init__(self, name, controller, port=0):
         system.__init__(self, name, controller, port)
+        # TTC and GS status variable
         self.mode = TTC_mode.OFF
         self.gs_status = TTC_GS_status.NO_RESPONSE
         self.connection_radius = 500
-        self.connected = True
+        self.connected = False
+        # Message queues for sending and receiving and printing
+        self.console_output = ''
+        self.gs_to_aros = ''
+        self.audio_to_save = b''
+
+    def gs_send_command(self, msg):
+        if msg == '':
+            # If message is empty, do nothing with it
+            return
+        # Add message sent to console output so that it can be seen
+        if self.console_output != '':
+            self.console_output += '\n'
+        self.console_output += f'GS[{"C" if self.connected else "X"}] > {msg}'
+
+        # Adds message to queue for ar-os if in right state for sending commands
+        if self.mode == TTC_mode.ESTABLISHED_CONT:
+            # State for sending commands to AR-OS from GS
+            self.gs_to_aros += msg + '\n'
 
 
-    def send_msg(self):
-        return b'TEST'
+    def get_msg(self):
+        # If in right state for connection for receiving commands, read from gs_to_aros
+        if self.mode == TTC_mode.ESTABLISHED_CONT:
+            # Save and clear message queue
+            msg = self.gs_to_aros
+            self.gs_to_aros = ""
+            # encode msg in bytes to be sent to AR-OS
+            msg = msg.encode(encoding='utf-8')
+            return msg
+        # If not in right mode, return empty byte string
+        return b''
 
     def recv_msg(self, msg=b'TEST'):
+        if self.mode == TTC_mode.OFF or self.mode == TTC_mode.BEACONING or self.mode == TTC_mode.CONNECTING or self.mode == TTC_mode.DISCONNECTED:
+            # If not in right mode to send byte then TTC will return an error
+            return False
+        elif self.connected == False:
+            # If TTC not connected but in right mode, return true but do nothing with it, data has just been lost
+            return True
+
+        # Add message sent to console output so that it can be seen
+        if self.console_output != '':
+            self.console_output += '\n'
+        self.console_output += f'AR-OS > {msg.decode(encoding="utf-8")}'
+
+        return True
+
+    def recv_health(self, msg=b'TEST'):
+        if self.mode == TTC_mode.OFF or self.mode == TTC_mode.BEACONING or self.mode == TTC_mode.CONNECTING or self.mode == TTC_mode.DISCONNECTED:
+            # If not in right mode to send byte then TTC will return an error
+            return False
+        elif self.connected == False:
+            # If TTC not connected but in right mode, return true but do nothing with it, data has just been lost
+            return True
+
+        health_data = msg.decode(encoding="utf-8")
+
+        # Save sent health data to log file, assumes health data is single message
+        f = open("TTC_output/health_log.txt", 'at')
+        f.write(health_data + '\n')
+        f.close()
+
+        if self.console_output != '':
+            self.console_output += '\n'
+        self.console_output += f'AR-OS > Logged Health data: {health_data[:70]}{"..." if len(health_data) > 70 else ""}'
+
+        return True
+
+    def recv_audio(self, msg=b'TEST'):
+        if self.mode == TTC_mode.OFF or self.mode == TTC_mode.BEACONING or self.mode == TTC_mode.CONNECTING or self.mode == TTC_mode.DISCONNECTED:
+            # If not in right mode to send byte then TTC will return an error
+            return False
+        elif self.connected == False:
+            # If TTC not connected but in right mode, return true but do nothing with it, data has just been lost
+            return True
+
+        # Append audio data recevived to total audio data, done assuming most audio files will be too big for one message
+        self.audio_to_save += msg
+
+        if self.audio_to_save != b'' and msg == b'':
+            # If audio data to save not empty but an empty message is sent, then end of message and should save it
+            # generate unique name from hash
+            audio_name = f'Audio_data_{str(hash(self.audio_to_save))}.wav'
+
+            # Save data in output folder with name
+            f = open(f'TTC_output/{audio_name}', 'wb')
+            f.write(self.audio_to_save)
+            f.close()
+
+            # Clear Audio to save after saving it
+            self.audio_to_save = b''
+
+            # Print to console
+            if self.console_output != '':
+                self.console_output += '\n'
+            self.console_output += f'AR-OS > Saved audio data in file {audio_name}'
+
         return True
 
     def set_off(self):
@@ -357,7 +447,7 @@ class TTC(system):
         return False
 
     def set_connecting(self):
-        if self.mode == TTC_mode.OFF:
+        if self.mode == TTC_mode.OFF or self.mode == TTC_mode.DISCONNECTED:
             self.mode = TTC_mode.CONNECTING
             return True
         return False

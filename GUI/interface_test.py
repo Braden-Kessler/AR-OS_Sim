@@ -279,7 +279,7 @@ class interface_testerLAN:
             print(f"{self.port}: Failed to set Pi to enabled for receiving, aborting")
             return
 
-        f = open('test.wav', 'wb')
+        f = open('test_output/test.wav', 'wb')
         test_file = b''
         receiving = False
         done = False
@@ -295,7 +295,7 @@ class interface_testerLAN:
                 test_file += rsp.byte_string
 
                 if rsp.byte_string != b'' and not receiving:
-                    print(f"{self.port}: Receiving File from Pi")
+                    print(f"{self.port}: Receiving file from Pi")
                     receiving = True
 
                 if rsp.byte_string == b'' and receiving:
@@ -304,6 +304,7 @@ class interface_testerLAN:
 
         f.write(test_file)
         f.close()
+        print(f"{self.port}: Successfully saved file from Pi, finished testing download ")
 
 
 if __name__ == "__main__":
