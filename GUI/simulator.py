@@ -198,7 +198,7 @@ class simulator:
 
         distance_to_sonarbouy = haversine(current, sonarbouy, unit=Unit.KILOMETERS)
         distance_to_groundStation = haversine(current, groundStation, unit=Unit.KILOMETERS)
-        print(f"distance to sonarbout is {distance_to_sonarbouy} and distance to GS is {distance_to_groundStation}")
+        # print(f"distance to sonarbout is {distance_to_sonarbouy} and distance to GS is {distance_to_groundStation}")
 
         # If within range on sonarbouy, then they are connected for internal purposes, and data is allowed to be sent
         if distance_to_sonarbouy <= self.Pi_VHF.connection_radius:

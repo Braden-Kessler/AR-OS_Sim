@@ -238,6 +238,73 @@ class interface_testerLAN:
         except:
             print(f"{self.port}: Failed to set the power saving status of EPS")
 
+    def test_pi_VHF_file(self):
+        """
+        Test the downloading of a file from the Pi/VHF
+        """
+        print(f"{self.port}: Testing Download of file from Pi")
+        if not self.connected:
+            # Return if connection not established first
+            print(f"{self.port}: Could not test download from Pi, not connected to in first place")
+            return
+
+        # Creates both protobuf objects
+        msg = pb.AROS_Command()
+        rsp = pb.Simulator_Response()
+
+        try:
+            msg.command = pb.COMMAND.PI_GET_MODE
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.PI_OFF
+            print(f"{self.port}: Successfully got response that Pi is disabled")
+        except:
+            print(f"{self.port}: Failed to check that Pi is disabled")
+
+        try:
+            msg.command = pb.COMMAND.PI_SET_ON
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_SUCCESS
+            print(f"{self.port}: Successfully set Pi to enabled for receiving")
+        except:
+            print(f"{self.port}: Failed to set Pi to enabled for receiving, aborting")
+            return
+
+        f = open('test.wav', 'wb')
+        test_file = b''
+        receiving = False
+        done = False
+
+        while not done:
+            msg.command = pb.COMMAND.PI_GET_AUDIO
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+            rsp.ParseFromString(rspString)
+
+            if rsp.HasField('byte_string'):
+                test_file += rsp.byte_string
+
+                if rsp.byte_string != b'' and not receiving:
+                    print(f"{self.port}: Receiving File from Pi")
+                    receiving = True
+
+                if rsp.byte_string == b'' and receiving:
+                    print(f"{self.port}: Finished receiving File from Pi")
+                    done = True
+
+        f.write(test_file)
+        f.close()
+
 
 if __name__ == "__main__":
     """
@@ -263,6 +330,8 @@ if __name__ == "__main__":
         system_tester.get_health()
 
     test_systems[0].test_eps()
+
+    test_systems[4].test_pi_VHF_file()
 
     cnt = 0
     while True:

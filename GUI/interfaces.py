@@ -429,13 +429,16 @@ class interfaceLAN_Pi_VHF(interfaceLAN):
             sim_resp.single = self.system.temp
 
         elif aros_com.command == pb.COMMAND.PI_GET_MODE:
-            if self.system.listening:
+            if self.system.enabled:
                 sim_resp.response = pb.RESPONSE.PI_ON
             else:
                 sim_resp.response = pb.RESPONSE.PI_OFF
         elif aros_com.command == pb.COMMAND.PI_GET_AUDIO:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_BYTE_STRING
-            sim_resp.byte_string = self.system.get_audio()
+            if not self.system.enabled:
+                sim_resp.response = pb.RESPONSE.GEN_ERROR
+            else:
+                sim_resp.response = pb.RESPONSE.GEN_RETURN_BYTE_STRING
+                sim_resp.byte_string = self.system.get_audio()
         elif aros_com.command == pb.COMMAND.PI_SET_ON:
             if self.system.set_on():
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS

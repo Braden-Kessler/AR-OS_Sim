@@ -251,6 +251,7 @@ class Pi_VHF(system):
     """
     System for simulating the Raspberry Pi and VHF Radio System in Audimus
     """
+
     def __init__(self, name, controller, port=0):
         system.__init__(self, name, controller, port)
         # Pi status
@@ -260,6 +261,7 @@ class Pi_VHF(system):
         self.audio_filepath = ""
         self.audio_status = audioState.NO_DATA
         self.byte_to_send = b''
+        self.PI_MSG_LENGTH = 100
         # Sonar Bouy
         self.connection_radius = 500.0
         self.latitude = 73.0
@@ -276,13 +278,36 @@ class Pi_VHF(system):
             self.audio_status = audioState.ERROR_LOADING
 
     def get_audio(self):
-        return b'TEST'
+        if self.connected is False:
+            # If Pi not connected, then return empty string
+            return b''
+
+        self.audio_status = audioState.SENDING
+
+        # gets section of message
+        msg = self.byte_to_send[0:self.PI_MSG_LENGTH]
+
+        if len(self.byte_to_send) > self.PI_MSG_LENGTH:
+            self.byte_to_send = self.byte_to_send[self.PI_MSG_LENGTH:]
+        else:
+            self.byte_to_send = b''
+            self.audio_status = audioState.SENT
+
+        # print(f"Sending message {msg}")
+
+        return msg
 
     def set_on(self):
-        return True
+        if not self.enabled:
+            self.enabled = True
+            return True
+        return False
 
     def set_off(self):
-        return True
+        if self.enabled:
+            self.enabled = False
+            return True
+        return False
 
 
 class audioState(Enum):
