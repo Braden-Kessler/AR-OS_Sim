@@ -77,16 +77,26 @@ class ESP(system):
     def __init__(self, name, controller, port=0):
         system.__init__(self, name, controller, port)
         self.fuel = 100
+        self.engine_temp = 0
         self.status = ESPState.OFF
 
     def set_warmup(self):
-        return True
+        if self.status == ESPState.OFF:
+            self.status = ESPState.WARMING
+            return True
+        return False
 
     def set_burn(self):
-        return True
+        if self.status == ESPState.READY:
+            self.status = ESPState.BURNING
+            return True
+        return False
 
     def set_off(self):
-        return True
+        if self.status == ESPState.BURNING:
+            self.status = ESPState.COOLDOWN
+            return True
+        return False
 
 
 class ESPState(Enum):

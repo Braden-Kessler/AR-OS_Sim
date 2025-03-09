@@ -135,10 +135,10 @@ class interface_testerLAN:
         try:
             # Parse contents of each response, assert correct fields and save desired data
             rsp.ParseFromString(rspString1)
-            assert rsp.response == pb.RESPONSE.GEN_RETURN_SINGLE and rsp.HasField('single')
+            assert rsp.response == pb.RESPONSE.GEN_RETURN_VOLTAGE and rsp.HasField('single')
             voltage = rsp.single
             rsp.ParseFromString(rspString2)
-            assert rsp.response == pb.RESPONSE.GEN_RETURN_SINGLE and rsp.HasField('single')
+            assert rsp.response == pb.RESPONSE.GEN_RETURN_TEMP and rsp.HasField('single')
             temp = rsp.single
             # Print positive response as well as the received voltage and temp data
             print(f"{self.port}: Successfully got health data {voltage}V and {temp}°C")
@@ -180,7 +180,7 @@ class interface_testerLAN:
 
             rsp.ParseFromString(rspString)
 
-            assert rsp.response == pb.RESPONSE.GEN_RETURN_SINGLE and rsp.HasField('single')
+            assert rsp.response == pb.RESPONSE.EPS_RETURN_CHARGE and rsp.HasField('single')
             charge = rsp.single
             print(f"{self.port}: Successfully checked EPS has charge and it's at {charge}%")
         except:
@@ -332,7 +332,7 @@ if __name__ == "__main__":
 
     test_systems[0].test_eps()
 
-    test_systems[4].test_pi_VHF_file()
+    #test_systems[4].test_pi_VHF_file()
 
     cnt = 0
     while True:

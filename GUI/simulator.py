@@ -2,7 +2,7 @@ import numpy as np
 import random
 import time
 from haversine import haversine, Unit
-from systems import ADCS_mode, EPSState, TTC_mode, TTC_GS_status
+from systems import ADCS_mode, EPSState, TTC_mode, TTC_GS_status, ESPState
 from display import KINGSTON
 
 # Constants
@@ -11,10 +11,14 @@ Re = 6378.1  # Earth's radius, km
 omega_earth = 7.2921159e-5  # Earth's angular velocity, rad/s
 
 # Rotational constants
-AV = 50  # Angular velocity ranges (divided by 10)
+AV_RANGE = 50  # Angular velocity ranges (divided by 10)
 
 # Charging constants for Power Supply
-rate = 0.01  # Charging and Discharging rate of battery
+EPS_RATE = 0.01  # Charging and Discharging rate of battery
+
+# Heating and burn constants for ESP
+ESP_HEAT_RATE = 0.1
+ESP_FUEL_RATE = 0.5
 
 class simulator:
     """
@@ -31,6 +35,7 @@ class simulator:
         self.GNSS = self.controller.GNSS
         self.ADCS = self.controller.ADCS
         self.EPS = self.controller.EPS
+        self.ESP = self.controller.ESP
         self.Pi_VHF = self.controller.Pi_VHF
         self.TTC = self.controller.TTC
 
@@ -57,7 +62,7 @@ class simulator:
 
         # Pitch Roll and Yaw (and their angular velocity) for ADCS
         self.angel = [0, 0, 0]
-        self.angular_velocity = [random.randint(-AV, AV)/10, random.randint(-AV, AV)/10, random.randint(-AV, AV)/10]
+        self.angular_velocity = [random.randint(-AV_RANGE, AV_RANGE) / 10, random.randint(-AV_RANGE, AV_RANGE) / 10, random.randint(-AV_RANGE, AV_RANGE) / 10]
         self.tumbling = True
 
 
@@ -101,7 +106,7 @@ class simulator:
         self.desiredTime = 0
         self.startTime = 0
 
-    def propagate_orbit(self):
+    def update_orbit(self):
         """
         Propagate using simple numerical integration (Euler's method for simplicity)
         """
@@ -124,7 +129,7 @@ class simulator:
         alt = np.linalg.norm(self.position) - Re
         return lat, long, alt
 
-    def propagate_angular_velocity(self):
+    def update_angular_velocity(self):
         """
         Propagates angular velocities to current orientation, apply ADCS state to correct tumbling and error.
         """
@@ -163,9 +168,9 @@ class simulator:
                 elif self.angel[i] < 0:
                     self.angel[i] += 1 * self.dt
 
-    def propagate_charge(self):
+    def update_charge(self):
         """
-        Propagates the charging of ESP based on current state and position of Audimus
+        Updates the charge of ESP based on current state and position of Audimus
         """
         if self.EPS.status == EPSState.MANUAL:
             # If manual return, since no change to charge
@@ -175,7 +180,7 @@ class simulator:
         elif self.EPS.status == EPSState.DECREASING or (self.position[0] < 0 and self.EPS.status == EPSState.SIMULATED):
             # If decreasing then decrease charge with every time step, don't go below 0
             if self.EPS.charge > 0:
-                self.EPS.charge -= (rate/2 if self.EPS.power_saving else rate) * self.dt
+                self.EPS.charge -= (EPS_RATE / 2 if self.EPS.power_saving else EPS_RATE) * self.dt
             elif self.EPS.charge < 0:
                 self.EPS.charge = 0
 
@@ -183,13 +188,13 @@ class simulator:
         elif self.EPS.status == EPSState.CHARGING or (self.position[0] > 0 and self.EPS.status == EPSState.SIMULATED):
             # If charging then increase charge with every time step, dont go above 100
             if self.EPS.charge < 100:
-                self.EPS.charge += (rate * 2 if self.EPS.power_saving else rate) * self.dt
+                self.EPS.charge += (EPS_RATE * 2 if self.EPS.power_saving else EPS_RATE) * self.dt
             elif self.EPS.charge > 100:
                 self.EPS.charge = 100
 
-    def check_connectivity_for(self):
+    def check_connectivity(self):
         """
-        Checks and updates TTC and Pi if within range of poitns during simulation
+        Checks and updates TTC and Pi if within range of points during simulation
         """
         # Determines distance from current location to sonarbouy and ground station
         current = (self.GNSS.latitude, self.GNSS.longitude)
@@ -219,23 +224,61 @@ class simulator:
             if self.TTC.mode == TTC_mode.ESTABLISHED_DATA or self.TTC.mode == TTC_mode.ESTABLISHED_CONT:
                 self.TTC.mode = TTC_mode.DISCONNECTED
 
+    def update_engine(self):
+        """
+        Updates the heat and fuel levels of the ESP based on ESP state
+        """
+        if self.ESP.status == ESPState.WARMING:
+            # If in warm up phase, increase internal temperature until 100%
+            self.ESP.engine_temp += ESP_HEAT_RATE * self.dt
+            if self.ESP.engine_temp >= 100:
+                # If over 100% temp, then transition to ready state
+                self.ESP.engine_temp = 100
+                self.ESP.status = ESPState.READY
+
+        elif self.ESP.status == ESPState.BURNING:
+            # If in burning phase, decrease fuel level
+            self.ESP.fuel -= ESP_FUEL_RATE * self.dt
+            if self.ESP.fuel <= 0:
+                # If fuel level falls below zero, set to zero and force cooldown
+                self.ESP.fuel = 0.0
+                self.ESP.status = ESPState.COOLDOWN
+
+        if self.ESP.status == ESPState.COOLDOWN:
+            # If in cooldown, decrease internal temperature until back at 0
+            self.ESP.engine_temp -= ESP_HEAT_RATE * self.dt
+            if self.ESP.engine_temp <= 0:
+                # If below or equal to 0% temp, then transition to off state
+                self.ESP.engine_temp = 0
+                self.ESP.status = ESPState.OFF
+
 
     def doTimeStep(self):
         """
         Advacne time forward one timestep, calculate new position and send it to GNSS, calculate new orientation and send
         it to ADCS, update charge in ESP, and connect/disconnect radio systems.
         """
-        self.propagate_orbit()
-        self.propagate_angular_velocity()
-        self.propagate_charge()
+        #
+        # Update orbit and angular parameters
+        self.update_orbit()
+        self.update_angular_velocity()
+        # Updates systems that have values tied to time
+        self.update_charge()
+        self.update_engine()
+        # Update simulation time based on time step
         self.time = self.time + self.dt
 
-        lat, long, alt = self.cartesian_to_geodetic()
+        # Calculate new coordinates and send to GNSS
+        lat, long, alt = (self.cartesian_to_geodetic())
         self.GNSS.simulate(lat, long, alt)
 
+        # Update adcs with calculated angels
         self.ADCS.simulate(self.angel)
 
-        self.check_connectivity_for()
+        # Update pi and TTCs connectivity based on current location
+        self.check_connectivity()
+
+
 
 
     def run(self, _):

@@ -371,18 +371,20 @@ class espDisplay(subDisplay):
     def generateLayoutBody(self):
         options = ('Off', 'Warming', 'Ready', 'Burning', 'Cooldown')
 
-        self.layout.append([[sg.Text('Fuel level:\t'), sg.Text(f'{self.system.fuel}%\t', key='-FUEL-'),
+        self.layout.append([[sg.Text('Fuel level:\t'), sg.Text(f'{round(self.system.fuel, 2)}%\t', key='-FUEL-'),
                             sg.Input(size=(4, 1), key='-INPUT_FUEL-'), sg.Button('Set Fuel Level', key='-SET_FUEL-')],
                             [sg.Text('Engine Status:\t'), sg.Text(f'{self.system.status.name}\t', key='-STATUS-'),
-                            sg.Listbox(options, size=(10, len(options)), key='-STATUS_OPTIONS-'), sg.Button('Set Status', key='-SET_STATUS-')]
+                            sg.Listbox(options, size=(10, len(options)), key='-STATUS_OPTIONS-'), sg.Button('Set Status', key='-SET_STATUS-')],
+                            [sg.Text('Engine Temperature Percent:\t'), sg.Text(f'{round(self.system.engine_temp, 2)}%', key='-ENG_TEMP-')]
                             ]
                            )
 
     def refresh(self):
         if self.window:
             self.window['-HEALTH-'].update(f'{self.system.voltage} V\t{self.system.temp}°C\t Port Status: {"CONNECTED" if self.system.interface.connected else "NOT CONNECTED"}')
-            self.window['-FUEL-'].update(f'{self.system.fuel}%\t')
+            self.window['-FUEL-'].update(f'{round(self.system.fuel, 2)}%\t')
             self.window['-STATUS-'].update(f'{self.system.status.name}\t')
+            self.window['-ENG_TEMP-'].update(f'{round(self.system.engine_temp, 2)}%')
 
     def handleEvent(self, event, values):
         if event == sg.WIN_CLOSED or event == '-CLOSE-':

@@ -198,14 +198,14 @@ class interfaceLAN_EPS(interfaceLAN):
         if aros_com.command == pb.COMMAND.GEN_PING:
             sim_resp.response = pb.RESPONSE.GEN_PONG
         elif aros_com.command == pb.COMMAND.GEN_GET_VOLTAGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_VOLTAGE
             sim_resp.single = self.system.voltage
         elif aros_com.command == pb.COMMAND.GEN_GET_TEMP:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_TEMP
             sim_resp.single = self.system.temp
 
         elif aros_com.command == pb.COMMAND.EPS_GET_CHARGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.EPS_RETURN_CHARGE
             sim_resp.single = self.system.charge
         elif aros_com.command == pb.COMMAND.EPS_GET_PS:
             if self.system.power_saving:
@@ -243,14 +243,14 @@ class interfaceLAN_ESP(interfaceLAN):
         if aros_com.command == pb.COMMAND.GEN_PING:
             sim_resp.response = pb.RESPONSE.GEN_PONG
         elif aros_com.command == pb.COMMAND.GEN_GET_VOLTAGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_VOLTAGE
             sim_resp.single = self.system.voltage
         elif aros_com.command == pb.COMMAND.GEN_GET_TEMP:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_TEMP
             sim_resp.single = self.system.temp
 
         elif aros_com.command == pb.COMMAND.ESP_GET_FUEL:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.ESP_RETURN_FUEL
             sim_resp.single = self.system.fuel
         elif aros_com.command == pb.COMMAND.ESP_GET_MODE:
             if self.system.status == ESPState.OFF:
@@ -300,10 +300,10 @@ class interfaceLAN_dragSail(interfaceLAN):
         if aros_com.command == pb.COMMAND.GEN_PING:
             sim_resp.response = pb.RESPONSE.GEN_PONG
         elif aros_com.command == pb.COMMAND.GEN_GET_VOLTAGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_VOLTAGE
             sim_resp.single = self.system.voltage
         elif aros_com.command == pb.COMMAND.GEN_GET_TEMP:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_TEMP
             sim_resp.single = self.system.temp
 
         elif aros_com.command == pb.COMMAND.DRAG_GET_MODE:
@@ -338,14 +338,14 @@ class interfaceLAN_ADCS(interfaceLAN):
         if aros_com.command == pb.COMMAND.GEN_PING:
             sim_resp.response = pb.RESPONSE.GEN_PONG
         elif aros_com.command == pb.COMMAND.GEN_GET_VOLTAGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_VOLTAGE
             sim_resp.single = self.system.voltage
         elif aros_com.command == pb.COMMAND.GEN_GET_TEMP:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_TEMP
             sim_resp.single = self.system.temp
 
         elif aros_com.command == pb.COMMAND.ADCS_GET_PRY:
-            sim_resp.response = pb.RESPONSE.GEM_RETURN_VECTOR
+            sim_resp.response = pb.RESPONSE.ADCS_RETURN_PRY
             sim_resp.vector = pb.VECTOR(x=self.system.pitch, y=self.system.roll, z=self.system.yaw)
         elif aros_com.command == pb.COMMAND.ADCS_GET_MODE:
             if self.system.mode == ADCS_mode.OFF:
@@ -391,14 +391,14 @@ class interfaceLAN_GNSS(interfaceLAN):
         if aros_com.command == pb.COMMAND.GEN_PING:
             sim_resp.response = pb.RESPONSE.GEN_PONG
         elif aros_com.command == pb.COMMAND.GEN_GET_VOLTAGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_VOLTAGE
             sim_resp.single = self.system.voltage
         elif aros_com.command == pb.COMMAND.GEN_GET_TEMP:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_TEMP
             sim_resp.single = self.system.temp
 
         elif aros_com.command == pb.COMMAND.GNSS_GET_POSI:
-            sim_resp.response = pb.RESPONSE.GEM_RETURN_VECTOR
+            sim_resp.response = pb.RESPONSE.GNSS_RETURN_POSI
             sim_resp.vector = pb.VECTOR(x=self.system.latitude, y=self.system.longitude, z=self.system.elevation)
         else:
             sim_resp.response = pb.RESPONSE.GEN_ERROR
@@ -422,10 +422,10 @@ class interfaceLAN_Pi_VHF(interfaceLAN):
         if aros_com.command == pb.COMMAND.GEN_PING:
             sim_resp.response = pb.RESPONSE.GEN_PONG
         elif aros_com.command == pb.COMMAND.GEN_GET_VOLTAGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_VOLTAGE
             sim_resp.single = self.system.voltage
         elif aros_com.command == pb.COMMAND.GEN_GET_TEMP:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_TEMP
             sim_resp.single = self.system.temp
 
         elif aros_com.command == pb.COMMAND.PI_GET_MODE:
@@ -437,7 +437,7 @@ class interfaceLAN_Pi_VHF(interfaceLAN):
             if not self.system.enabled:
                 sim_resp.response = pb.RESPONSE.GEN_ERROR
             else:
-                sim_resp.response = pb.RESPONSE.GEN_RETURN_BYTE_STRING
+                sim_resp.response = pb.RESPONSE.PI_RETURN_AUDIO
                 sim_resp.byte_string = self.system.get_audio()
         elif aros_com.command == pb.COMMAND.PI_SET_ON:
             if self.system.set_on():
@@ -471,10 +471,10 @@ class interfaceLAN_OBC(interfaceLAN):
         if aros_com.command == pb.COMMAND.GEN_PING:
             sim_resp.response = pb.RESPONSE.GEN_PONG
         elif aros_com.command == pb.COMMAND.GEN_GET_VOLTAGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_VOLTAGE
             sim_resp.single = self.system.voltage
         elif aros_com.command == pb.COMMAND.GEN_GET_TEMP:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_TEMP
             sim_resp.single = self.system.temp
         else:
             sim_resp.response = pb.RESPONSE.GEN_ERROR
@@ -498,10 +498,10 @@ class interfaceLAN_TTC(interfaceLAN):
         if aros_com.command == pb.COMMAND.GEN_PING:
             sim_resp.response = pb.RESPONSE.GEN_PONG
         elif aros_com.command == pb.COMMAND.GEN_GET_VOLTAGE:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_VOLTAGE
             sim_resp.single = self.system.voltage
         elif aros_com.command == pb.COMMAND.GEN_GET_TEMP:
-            sim_resp.response = pb.RESPONSE.GEN_RETURN_SINGLE
+            sim_resp.response = pb.RESPONSE.GEN_RETURN_TEMP
             sim_resp.single = self.system.temp
         elif aros_com.command == pb.COMMAND.TTC_GET_MODE:
             if self.system.mode == TTC_mode.OFF:
@@ -518,9 +518,9 @@ class interfaceLAN_TTC(interfaceLAN):
                 sim_resp.response = pb.RESPONSE.TTC_BROADCAST_NO_CON
             elif self.system.mode == TTC_mode.DISCONNECTED:
                 sim_resp.response = pb.RESPONSE.TTC_DISCONNECTED
-        elif aros_com.command == pb.COMMAND.TTC_GET_BYTE_STRING:
+        elif aros_com.command == pb.COMMAND.TTC_GET_COMMAND:
             if self.system.mode == TTC_mode.ESTABLISHED_DATA or self.system.mode == TTC_mode.ESTABLISHED_CONT or self.system.mode == TTC_mode.BROADCAST_NO_CON:
-                sim_resp.response = pb.RESPONSE.GEN_RETURN_BYTE_STRING
+                sim_resp.response = pb.RESPONSE.TTC_RETURN_COMMAND
                 sim_resp.byte_string = self.system.get_msg()
             else:
                 sim_resp.response = pb.RESPONSE.GEN_ERROR
@@ -547,6 +547,8 @@ class interfaceLAN_TTC(interfaceLAN):
         elif aros_com.command == pb.COMMAND.TTC_SEND_BYTE_STRING:
             if aros_com.HasField('byte_string'):
                 msg = aros_com.byte_string
+            else:
+                msg = b''
             if self.system.recv_msg(msg=msg):
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS
             else:
@@ -554,6 +556,8 @@ class interfaceLAN_TTC(interfaceLAN):
         elif aros_com.command == pb.COMMAND.TTC_SEND_HEALTH:
             if aros_com.HasField('byte_string'):
                 msg = aros_com.byte_string
+            else:
+                msg = b''
             if self.system.recv_health(msg=msg):
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS
             else:
@@ -561,6 +565,8 @@ class interfaceLAN_TTC(interfaceLAN):
         elif aros_com.command == pb.COMMAND.TTC_SEND_AUDIO:
             if aros_com.HasField('byte_string'):
                 msg = aros_com.byte_string
+            else:
+                msg = b''
             if self.system.recv_audio(msg=msg):
                 sim_resp.response = pb.RESPONSE.GEN_SUCCESS
             else:
