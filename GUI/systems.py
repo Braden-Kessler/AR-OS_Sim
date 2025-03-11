@@ -3,6 +3,7 @@ from abc import ABC
 from enum import Enum
 from queue import Queue
 from threading import Lock
+import time  # Only used for getting local time to save files
 
 
 DEFAULT_VOLTAGE = 12.0
@@ -427,7 +428,7 @@ class TTC(system):
         if self.audio_to_save != b'' and msg == b'':
             # If audio data to save not empty but an empty message is sent, then end of message and should save it
             # generate unique name from hash
-            audio_name = f'Audio_data_{str(hash(self.audio_to_save))}.wav'
+            audio_name = f'Audio_data_{time.localtime()}.wav'
 
             # Save data in output folder with name
             f = open(f'TTC_output/{audio_name}', 'wb')

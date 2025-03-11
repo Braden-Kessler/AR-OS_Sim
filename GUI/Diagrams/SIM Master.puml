@@ -1,0 +1,299 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+left to right direction
+
+class controller {
++run()
+}
+
+class simulator {
++run()
++orbital_elements_to_state_vectors()
++update_orbit()
++cartesian_to_geodetic()
++update_angular_velocity()
++update_charge()
++check_connectivity()
++update_engine()
++doTimeStep()
+}
+
+abstract class system{
++run()
++add_interface()
+}
+
+class EPS {
++set_ps_on()
++set_ps_off()
+}
+
+enum EPSState{
+MANUAL
+SIMULATED
+DECREASING
+CHARGING
+}
+
+class ESP{
++set_warmup()
++set_burn()
++set_off()
+}
+
+enum ESPState {
+OFF
+WARMING
+READY
+BURNING
+COOLDOWN
+}
+
+class dragSail{
++deploy_drag()
+}
+
+class ADCS {
++simulate()
++set_off()
++set_de_tumbling()
++set_sun_pointing()
+}
+
+enum ADCS_mode{
+OFF
+DETUMBLING
+SUN_POINTING
+}
+
+class GNSS {
++simulate()
++clear()
+}
+
+enum GNSS_ADCSState {
+MANUAL
+SIMULATED
+}
+
+class Pi_VHF {
++load_file()
++get_audio()
++set_on()
++set_off()
+}
+
+enum audioState {
+NO_DATA
+UNSENT
+SENDING
+SENT
+ERROR_LOADING
+}
+
+class OBS{}
+
+class TTC{
++gs_send_command()
++get_msg()
++recv_msg()
++recv_health()
++recv_audio()
++set_off()
++set_beaconing()
++set_connecting()
++set_broadcast_no_con()
+}
+
+enum TTC_mode {
+OFF
+BEACONING
+CONNECTING
+ESTABLISHED_DATA
+ESTABLISHED_CONT
+BROADCAST_NO_CON
+DISCONNECTED
+}
+
+enum TTC_GS_status {
+NO_RESPONSE
+CONNECTION_DATA
+CONNECTION_CONTROL
+}
+
+class displayController {
++run()
++addSystem()
++addSimulator()
++autoRefresher()
+}
+
+class simulatorDisplay {
++generateLayout()
++generateWindow()
++close()
++refresh()
++handleEvent()
+}
+
+abstract class subDisplay {
++generateLayout()
++generateLayoutHeader()
++generateLayoutBody() {abstract}
++refresh() {abstract}
++handleEvent() {abstract}
++generateWindow()
++close()
+}
+
+class epsDisplay {
++generateLayoutBody()
++refresh()
++handleEvent()
+}
+
+class espDisplay {
++generateLayoutBody()
++refresh()
++handleEvent()
+}
+
+class dragSailDisplay {
++generateLayoutBody()
++refresh()
++handleEvent()
+}
+
+class adcsDisplay {
++generateLayoutBody()
++refresh()
++handleEvent()
+}
+
+class gnssDisplay {
++generateLayoutBody()
++refresh()
++handleEvent()
++updateMap()
++wrap_around()
++drawGlobe()
+}
+
+class pi_vhfDisplay {
++generateLayoutBody()
++refresh()
++handleEvent()
+}
+
+class obcDisplay {
++generateLayoutBody()
++refresh()
++handleEvent()
+}
+
+class ttcDisplay {
++generateLayoutBody()
++refresh()
++handleEvent()
++print_to_console()
+}
+
+class sohPopup {
++generateLayout()
++generatePopup()
+}
+
+abstract class interface {
++runInterface()
++connect() {abstract}
++sendTo() {abstract}
++recvFrom() {abstract}
++handle_communication() {abstract}
+}
+
+abstract class interfaceLAN {
++connect()
++sendTo()
++recvFrom()
++handle_communication() {abstract}
+}
+
+class interfaceLAN_EPS {
++handle_communication()
+}
+
+class interfaceLAN_ESP {
++handle_communication()
+}
+
+class interfaceLAN_dragSail {
++handle_communication()
+}
+
+class interfaceLAN_ADCS {
++handle_communication()
+}
+
+class interfaceLAN_GNSS {
++handle_communication()
+}
+
+class interfaceLAN_Pi_VHF {
++handle_communication()
+}
+
+class interfaceLAN_OBC {
++handle_communication()
+}
+
+class interfaceLAN_TTC {
++handle_communication()
+}
+
+
+interfaceLAN -right-|> interface
+interfaceLAN_EPS --|> interfaceLAN
+interfaceLAN_ESP --|> interfaceLAN
+interfaceLAN_dragSail --|> interfaceLAN
+interfaceLAN_ADCS --|> interfaceLAN
+interfaceLAN_GNSS --|> interfaceLAN
+interfaceLAN_Pi_VHF --|> interfaceLAN
+interfaceLAN_OBC --|> interfaceLAN
+interfaceLAN_TTC --|> interfaceLAN
+
+epsDisplay --|> subDisplay
+espDisplay --|> subDisplay
+dragSailDisplay --|> subDisplay
+adcsDisplay --|> subDisplay
+gnssDisplay --|> subDisplay
+pi_vhfDisplay --|> subDisplay
+obcDisplay --|> subDisplay
+ttcDisplay --|> subDisplay
+
+EPS --|> system
+ESP --|> system
+dragSail --|> system
+ADCS --|> system
+GNSS --|> system
+Pi_VHF --|> system
+OBS --|> system
+TTC --|> system
+
+system -left-* interface
+subDisplay -left-* system
+
+simulator -right-* controller
+displayController --* controller
+
+subDisplay --* displayController
+subDisplay --* simulatorDisplay
+subDisplay --* sohPopup
+
+EPSState -[#00000]- ESPState
+ESPState -[#00000]- ADCS_mode
+ADCS_mode -[#00000]- GNSS_ADCSState
+GNSS_ADCSState -[#00000]- audioState
+audioState -[#00000]- TTC_mode
+TTC_mode -[#00000]- TTC_GS_status
+@enduml
