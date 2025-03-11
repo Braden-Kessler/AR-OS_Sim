@@ -17,7 +17,7 @@ AV_RANGE = 50  # Angular velocity ranges (divided by 10)
 EPS_RATE = 0.01  # Charging and Discharging rate of battery
 
 # Heating and burn constants for ESP
-ESP_HEAT_RATE = 0.1
+ESP_HEAT_RATE = 1
 ESP_FUEL_RATE = 0.5
 
 class simulator:

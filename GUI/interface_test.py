@@ -241,6 +241,17 @@ class interface_testerLAN:
     def test_pi_VHF_file(self):
         """
         Test the downloading of a file from the Pi/VHF
+
+        Steps to set up in GUI.
+
+        1) Select audio file in Pi_VHF
+        2) Click "Set File"
+        3) Type 999999 into "Connection Range"
+        4) Click "Set Range"
+        5) In Simulator panel, if not already running simulation,
+            5.1) Initialize simulation
+            5.2) Do at least one time step
+
         """
         print(f"{self.port}: Testing Download of file from Pi")
         if not self.connected:
@@ -307,6 +318,188 @@ class interface_testerLAN:
         print(f"{self.port}: Successfully saved file from Pi, finished testing download ")
 
 
+    def test_ttc_gc_comms(self):
+        """
+        Test the different comms method of TTC and GS
+
+        Steps to set up in GUI.
+        1) In Simulator panel, if not already running simulation,
+            1.1) Initialize simulation
+            1.2) Enable real time
+        2) Open TTC/GS
+        3) Type 999999 into "Connection Range"
+        4) Click "Set Range"
+        5) When promoted for a command, enter anything into input box and click "send"
+
+        """
+        print(f"{self.port}: Testing Download of file from Pi")
+        if not self.connected:
+            # Return if connection not established first
+            print(f"{self.port}: Could not test download from Pi, not connected to in first place")
+            return
+
+        # Creates both protobuf objects
+        msg = pb.AROS_Command()
+        rsp = pb.Simulator_Response()
+
+        try:
+            msg.command = pb.COMMAND.TTC_GET_MODE
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.TTC_OFF
+            print(f"{self.port}: Successfully got response that TTC is off")
+        except:
+            print(f"{self.port}: Failed to check that TTC is off")
+
+        try:
+            msg.command = pb.COMMAND.TTC_SET_CONNECTING
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_SUCCESS
+            print(f"{self.port}: Successfully set TTC to connecting")
+        except:
+            print(f"{self.port}: Failed to set TTC to connecting")
+            return
+
+        connected = False
+
+        while not connected:
+            try:
+                msg.command = pb.COMMAND.TTC_GET_MODE
+                msgString = msg.SerializeToString()
+                self.send(msgString)
+                rspString = self.recv()
+
+                rsp.ParseFromString(rspString)
+
+                if rsp.response == pb.RESPONSE.TTC_ESTABLISHED_CONT:
+                    connected = True
+            except:
+                print(f"{self.port}: Failed to check TTC mode when waiting for connection")
+                return
+
+        try:
+            msg.command = pb.COMMAND.TTC_SEND_BYTE_STRING
+            msg.byte_string = b'This is a test of send byte string function\nThis would be used for testing\nor responses to command'
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_SUCCESS
+            print(f"{self.port}: Successfully sent byte string to TTC")
+        except:
+            print(f"{self.port}: Failed to send byte string to TTC:")
+            return
+
+        try:
+            msg.command = pb.COMMAND.TTC_SEND_HEALTH
+            test_health_data = '[This is a random health string, generated sequential numbers'
+            for i in range(0,50):
+                test_health_data += f', {i*random.randint(1,10)}'
+            test_health_data += ']'
+            msg.byte_string = test_health_data.encode('utf-8')
+
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_SUCCESS
+            print(f"{self.port}: Successfully sent health data to TTC")
+        except:
+            print(f"{self.port}: Failed to send health data to TTC:")
+            return
+
+
+
+        try:
+            sending = True
+            f = open('test_input/StarWars3.wav', 'rb')
+            file = f.read()
+            f.close()
+
+            print(f"{self.port}: Successfully opened file to send")
+
+            while sending:
+                msg.command = pb.COMMAND.TTC_SEND_AUDIO
+                if file == b'':
+                    print(f"Last {len(file)}")
+                    file_part = b''
+                    sending = False
+                elif len(file) < 100:
+                    print(f"Second last {len(file)}")
+                    file_part = file
+                    file = b''
+                else:
+                    #print(f"Regular {len(file)}")
+                    file_part = file[:100]
+                    file = file[100:]
+
+                msg.byte_string = file_part
+
+                msgString = msg.SerializeToString()
+                self.send(msgString)
+                rspString = self.recv()
+
+                rsp.ParseFromString(rspString)
+
+                assert rsp.response == pb.RESPONSE.GEN_SUCCESS
+            print(f"{self.port}: Successfully sent file to to TTC")
+        except:
+            print(f"{self.port}: Failed to send file to TTC:")
+            return
+
+        try:
+            msg.command = pb.COMMAND.TTC_SEND_BYTE_STRING
+            msg.byte_string = b'Please send a command to test'
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.GEN_SUCCESS
+            print(f"{self.port}: Successfully sent second byte string to TTC")
+        except:
+            print(f"{self.port}: Failed to send second byte string to TTC:")
+            return
+
+        try:
+            waiting = True
+            while waiting:
+                msg.command = pb.COMMAND.TTC_GET_COMMAND
+                msgString = msg.SerializeToString()
+                self.send(msgString)
+                rspString = self.recv()
+
+                rsp.ParseFromString(rspString)
+
+                assert rsp.response == pb.RESPONSE.TTC_RETURN_COMMAND and rsp.HasField('byte_string')
+                command = rsp.byte_string
+                if command != b'':
+                    waiting = False
+                    break
+
+            command = command.decode('utf-8')
+            print(f"{self.port}: Successfully recevived command from TTC: {command}")
+
+        except:
+            print(f"{self.port}: Failed to receive command form TTC:")
+            return
+
+
+
 if __name__ == "__main__":
     """
     Tests the generic functionality of the interfaceLAN objects from interfaces.py.
@@ -315,6 +508,8 @@ if __name__ == "__main__":
     test_systems = []
     # list of ports used by systems
     ports = (8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008)
+
+    print("Beginning Regular testing")
 
     for port in ports:
         # For each system, create a tester with its port and connect to it
@@ -332,7 +527,11 @@ if __name__ == "__main__":
 
     test_systems[0].test_eps()
 
-    #test_systems[4].test_pi_VHF_file()
+    test_systems[4].test_pi_VHF_file()
+
+    test_systems[7].test_ttc_gc_comms()
+
+    print("Finished Regular testing, Beginning sporadic Pinging")
 
     cnt = 0
     while True:

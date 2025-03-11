@@ -409,7 +409,7 @@ class TTC(system):
 
         if self.console_output != '':
             self.console_output += '\n'
-        self.console_output += f'AR-OS > Logged Health data: {health_data[:70]}{"..." if len(health_data) > 70 else ""}'
+        self.console_output += f'AR-OS > Logged Health data: {health_data[:80]}{"..." if len(health_data) > 70 else ""}'
 
         return True
 
