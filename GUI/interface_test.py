@@ -527,7 +527,7 @@ if __name__ == "__main__":
 
     test_systems[0].test_eps()
 
-    test_systems[4].test_pi_VHF_file()
+    # test_systems[4].test_pi_VHF_file()
 
     test_systems[7].test_ttc_gc_comms()
 

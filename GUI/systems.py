@@ -428,7 +428,7 @@ class TTC(system):
         if self.audio_to_save != b'' and msg == b'':
             # If audio data to save not empty but an empty message is sent, then end of message and should save it
             # generate unique name from hash
-            audio_name = f'Audio_data_{time.localtime()}.wav'
+            audio_name = f'Audio_data_{time.strftime("%d-%m-%y_%H-%M-%S")}.wav'
 
             # Save data in output folder with name
             f = open(f'TTC_output/{audio_name}', 'wb')

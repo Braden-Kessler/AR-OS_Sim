@@ -371,7 +371,7 @@ class espDisplay(subDisplay):
     def generateLayoutBody(self):
         options = ('Off', 'Warming', 'Ready', 'Burning', 'Cooldown')
 
-        self.layout.append([[sg.Text('Fuel level:\t'), sg.Text(f'{round(self.system.fuel, 2)}%\t', key='-FUEL-'),
+        self.layout.append([[sg.Text('Fuel Level:\t'), sg.Text(f'{round(self.system.fuel, 2)}%\t', key='-FUEL-'),
                             sg.Input(size=(4, 1), key='-INPUT_FUEL-'), sg.Button('Set Fuel Level', key='-SET_FUEL-')],
                             [sg.Text('Engine Status:\t'), sg.Text(f'{self.system.status.name}\t', key='-STATUS-'),
                             sg.Listbox(options, size=(10, len(options)), key='-STATUS_OPTIONS-'), sg.Button('Set Status', key='-SET_STATUS-')],
