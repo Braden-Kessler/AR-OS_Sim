@@ -215,9 +215,9 @@ class simulator:
             self.TTC.connected = True
             if self.TTC.gs_status == TTC_GS_status.NO_RESPONSE:
                 pass
-            elif self.TTC.gs_status == TTC_GS_status.CONNECTION_DATA and (self.TTC.mode == TTC_mode.BEACONING or self.TTC.mode == TTC_mode.CONNECTING):
+            elif self.TTC.gs_status == TTC_GS_status.CONNECTION_DATA and (self.TTC.mode == TTC_mode.BEACONING or self.TTC.mode == TTC_mode.CONNECTING or self.TTC.mode == TTC_mode.BROADCAST_NO_CON):
                 self.TTC.mode = TTC_mode.ESTABLISHED_DATA
-            elif self.TTC.gs_status == TTC_GS_status.CONNECTION_CONTROL and (self.TTC.mode == TTC_mode.BEACONING or self.TTC.mode == TTC_mode.CONNECTING):
+            elif self.TTC.gs_status == TTC_GS_status.CONNECTION_CONTROL and (self.TTC.mode == TTC_mode.BEACONING or self.TTC.mode == TTC_mode.CONNECTING or self.TTC.mode == TTC_mode.BROADCAST_NO_CON):
                 self.TTC.mode = TTC_mode.ESTABLISHED_CONT
         else:
             self.TTC.connected = False

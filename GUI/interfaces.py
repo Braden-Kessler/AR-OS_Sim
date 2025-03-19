@@ -345,7 +345,9 @@ class interfaceLAN_ADCS(interfaceLAN):
 
         elif aros_com.command == pb.COMMAND.ADCS_GET_PRY:
             sim_resp.response = pb.RESPONSE.ADCS_RETURN_PRY
-            sim_resp.vector = pb.VECTOR(x=self.system.pitch, y=self.system.roll, z=self.system.yaw)
+            sim_resp.vector.x = self.system.pitch
+            sim_resp.vector.y = self.system.roll
+            sim_resp.vector.z = self.system.yaw
         elif aros_com.command == pb.COMMAND.ADCS_GET_MODE:
             if self.system.mode == ADCS_mode.OFF:
                 sim_resp.response = pb.RESPONSE.ADCS_OFF
@@ -398,7 +400,9 @@ class interfaceLAN_GNSS(interfaceLAN):
 
         elif aros_com.command == pb.COMMAND.GNSS_GET_POSI:
             sim_resp.response = pb.RESPONSE.GNSS_RETURN_POSI
-            sim_resp.vector = pb.VECTOR(x=self.system.latitude, y=self.system.longitude, z=self.system.elevation)
+            sim_resp.vector.x = self.system.latitude
+            sim_resp.vector.y = self.system.longitude
+            sim_resp.vector.z = self.system.elevation
         else:
             sim_resp.response = pb.RESPONSE.GEN_ERROR
 
