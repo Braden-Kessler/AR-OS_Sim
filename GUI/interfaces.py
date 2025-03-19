@@ -5,7 +5,6 @@ from systems import ESPState, ADCS_mode, TTC_mode
 
 HOST = "127.0.0.1"
 
-
 class interface(ABC):
     """
     Generic interface code for connecting the simulator to AR-OS.
@@ -520,8 +519,12 @@ class interfaceLAN_TTC(interfaceLAN):
                 sim_resp.response = pb.RESPONSE.TTC_DISCONNECTED
         elif aros_com.command == pb.COMMAND.TTC_GET_COMMAND:
             if self.system.mode == TTC_mode.ESTABLISHED_DATA or self.system.mode == TTC_mode.ESTABLISHED_CONT or self.system.mode == TTC_mode.BROADCAST_NO_CON:
-                sim_resp.response = pb.RESPONSE.TTC_RETURN_COMMAND
-                sim_resp.byte_string = self.system.get_msg()
+                msg = self.system.get_msg()
+                if msg == b'':
+                    sim_resp.response = pb.RESPONSE.GEN_ERROR
+                else:
+                    sim_resp.response = pb.RESPONSE.TTC_RETURN_COMMAND
+                    sim_resp.byte_string = msg
             else:
                 sim_resp.response = pb.RESPONSE.GEN_ERROR
         elif aros_com.command == pb.COMMAND.TTC_SET_OFF:
