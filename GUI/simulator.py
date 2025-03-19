@@ -273,7 +273,7 @@ class simulator:
         self.GNSS.simulate(lat, long, alt)
 
         # Update adcs with calculated angels
-        self.ADCS.simulate(self.angel)
+        self.ADCS.simulate(self.angel, self.angular_velocity)
 
         # Update pi and TTCs connectivity based on current location
         self.check_connectivity()

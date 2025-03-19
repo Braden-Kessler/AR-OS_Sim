@@ -39,6 +39,7 @@ enum COMMAND {
   DRAG_SET_DEPLOY = 12;
 
   ADCS_GET_PRY = 13; // Pitch Roll Yaw
+  ADCS_GET_AV = 35;
   ADCS_GET_MODE = 14;
   ADCS_SET_OFF = 15;
   ADCS_SET_DE_TUMBLE = 16;
@@ -92,6 +93,7 @@ enum RESPONSE {
   ADCS_DE_TUMBLE = 14;
   ADCS_SUN_POINT = 15;
   ADCS_RETURN_PRY = 34; // Pitch Roll Yaw
+  ADCS_RETURN_AV = 37;
 
   GNSS_RETURN_POSI = 35;
 

@@ -348,6 +348,11 @@ class interfaceLAN_ADCS(interfaceLAN):
             sim_resp.vector.x = self.system.pitch
             sim_resp.vector.y = self.system.roll
             sim_resp.vector.z = self.system.yaw
+        elif aros_com.command == pb.COMMAND.ADCS_GET_AV:
+            sim_resp.response = pb.RESPONSE.ADCS_RETURN_AV
+            sim_resp.vector.x = self.system.pitch_av
+            sim_resp.vector.y = self.system.roll_av
+            sim_resp.vector.z = self.system.yaw_av
         elif aros_com.command == pb.COMMAND.ADCS_GET_MODE:
             if self.system.mode == ADCS_mode.OFF:
                 sim_resp.response = pb.RESPONSE.ADCS_OFF
@@ -522,7 +527,7 @@ class interfaceLAN_TTC(interfaceLAN):
             elif self.system.mode == TTC_mode.DISCONNECTED:
                 sim_resp.response = pb.RESPONSE.TTC_DISCONNECTED
         elif aros_com.command == pb.COMMAND.TTC_GET_COMMAND:
-            if self.system.mode == TTC_mode.ESTABLISHED_DATA or self.system.mode == TTC_mode.ESTABLISHED_CONT or self.system.mode == TTC_mode.BROADCAST_NO_CON:
+            if self.system.mode == TTC_mode.ESTABLISHED_DATA or self.system.mode == TTC_mode.ESTABLISHED_CONT:
                 msg = self.system.get_msg()
                 if msg == b'':
                     sim_resp.response = pb.RESPONSE.GEN_ERROR

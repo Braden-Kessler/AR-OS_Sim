@@ -137,15 +137,21 @@ class ADCS(system):
         self.pitch = 0.0
         self.roll = 0.0
         self.yaw = 0.0
+        self.pitch_av = 0.0
+        self.roll_av = 0.0
+        self.yaw_av = 0.0
         self.status = GNSS_ADCSState.SIMULATED
         self.mode = ADCS_mode.OFF
 
-    def simulate(self, angel):
+    def simulate(self, angel, angular_velocities):
         if self.status == GNSS_ADCSState.MANUAL:
             return
         self.pitch = angel[0]
         self.roll = angel[1]
         self.yaw = angel[2]
+        self.pitch_av = angular_velocities[0]
+        self.roll_av = angular_velocities[1]
+        self.yaw_av = angular_velocities[2]
 
     def set_off(self):
         if self.mode != ADCS_mode.OFF:
