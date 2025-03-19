@@ -20,7 +20,7 @@ class interface_testerLAN:
         """
         self.socket.close()
 
-    def sim(self):
+    def connect(self):
         """
         Attempts to connect to the given port at local host IP
         """
@@ -317,6 +317,54 @@ class interface_testerLAN:
         f.close()
         print(f"{self.port}: Successfully saved file from Pi, finished testing download ")
 
+    def test_adcs_vectors(self):
+        """
+        Test retriving vectors of data using the ADCS' PRY and AV commands
+        """
+        print(f"{self.port}: Testing retrieving vectors from simulator")
+        if not self.connected:
+            # Return if connection not established first
+            print(f"{self.port}: Could not test retrieving vectors, not connected to in first place")
+            return
+
+        # Creates both protobuf objects
+        msg = pb.AROS_Command()
+        rsp = pb.Simulator_Response()
+
+        # Tries to retrieve the Pitch Roll and Yaw
+        try:
+            msg.command = pb.COMMAND.ADCS_GET_PRY
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.ADCS_RETURN_PRY and rsp.HasField('vector')
+            pitch = rsp.vector.x
+            roll = rsp.vector.y
+            yaw = rsp.vector.z
+            print(f"{self.port}: Successfully got response that ADCS has Pitch {pitch}, Roll {roll}, and Yaw {yaw}.")
+        except Exception as e:
+            print(f"{self.port}: Failed to get Pitch Roll and Yaw from ADCS: {e}")
+
+        # Tries to retrieve the Angular Velocities
+        try:
+            msg.command = pb.COMMAND.ADCS_GET_AV
+            msgString = msg.SerializeToString()
+            self.send(msgString)
+            rspString = self.recv()
+
+            rsp.ParseFromString(rspString)
+
+            assert rsp.response == pb.RESPONSE.ADCS_RETURN_AV and rsp.HasField('vector')
+            pitch_av = rsp.vector.x
+            roll_av = rsp.vector.y
+            yaw_av = rsp.vector.z
+            print(f"{self.port}: Successfully got response that ADCS has angualr velocities [{pitch_av}, {roll_av}, {yaw_av}].")
+        except Exception as e:
+            print(f"{self.port}: Failed to get angular velocities from ADCS: {e}")
+
 
     def test_ttc_gc_comms(self):
         """
@@ -528,9 +576,11 @@ if __name__ == "__main__":
 
     test_systems[0].test_eps()
 
-    test_systems[4].test_pi_VHF_file()
+    #test_systems[4].test_pi_VHF_file()
 
-    test_systems[7].test_ttc_gc_comms()
+    #test_systems[7].test_ttc_gc_comms()
+
+    test_systems[6].test_adcs_vectors()
 
     print("Finished Regular testing, Beginning sporadic Pinging")
 

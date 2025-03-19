@@ -228,8 +228,8 @@ class simulatorDisplay:
                 pass
         elif event == '-INIT-':
             self.simulator.orbital_elements_to_state_vectors()
-            print(self.simulator.position)
-            print(self.simulator.velocity)
+            #print(self.simulator.position)
+            #print(self.simulator.velocity)
         elif event == '-DEBUG-':
             if self.debug:
                 self.debug = False
