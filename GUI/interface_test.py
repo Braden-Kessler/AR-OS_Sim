@@ -20,7 +20,7 @@ class interface_testerLAN:
         """
         self.socket.close()
 
-    def connect(self):
+    def sim(self):
         """
         Attempts to connect to the given port at local host IP
         """
@@ -434,11 +434,11 @@ class interface_testerLAN:
             while sending:
                 msg.command = pb.COMMAND.TTC_SEND_AUDIO
                 if file == b'':
-                    print(f"Last {len(file)}")
+                    # print(f"Last {len(file)}")
                     file_part = b''
                     sending = False
                 elif len(file) < 100:
-                    print(f"Second last {len(file)}")
+                    # print(f"Second last {len(file)}")
                     file_part = file
                     file = b''
                 else:
@@ -470,9 +470,9 @@ class interface_testerLAN:
             rsp.ParseFromString(rspString)
 
             assert rsp.response == pb.RESPONSE.GEN_SUCCESS
-            print(f"{self.port}: Successfully sent second byte string to TTC")
+            # print(f"{self.port}: Successfully sent second byte string to TTC")
         except:
-            print(f"{self.port}: Failed to send second byte string to TTC:")
+            # print(f"{self.port}: Failed to send second byte string to TTC:")
             return
 
         try:
@@ -485,14 +485,15 @@ class interface_testerLAN:
 
                 rsp.ParseFromString(rspString)
 
-                assert rsp.response == pb.RESPONSE.TTC_RETURN_COMMAND and rsp.HasField('byte_string')
-                command = rsp.byte_string
-                if command != b'':
+                assert rsp.response == pb.RESPONSE.TTC_RETURN_COMMAND or rsp.response == pb.RESPONSE.GEN_ERROR
+                if rsp.response == pb.RESPONSE.TTC_RETURN_COMMAND:
+                    assert rsp.HasField('byte_string')
+                    command = rsp.byte_string
                     waiting = False
                     break
 
             command = command.decode('utf-8')
-            print(f"{self.port}: Successfully recevived command from TTC: {command}")
+            print(f"{self.port}: Successfully recevived command from TTC: \"{command}\"")
 
         except:
             print(f"{self.port}: Failed to receive command form TTC:")
@@ -527,7 +528,7 @@ if __name__ == "__main__":
 
     test_systems[0].test_eps()
 
-    # test_systems[4].test_pi_VHF_file()
+    test_systems[4].test_pi_VHF_file()
 
     test_systems[7].test_ttc_gc_comms()
 
